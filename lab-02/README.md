@@ -15,11 +15,25 @@ Terraform → OCI → OKE → Ampere A1 (ARM64)
 
 ## 2. Pré-requisitos
 
-- **LAB 01 aplicado** — a VCN, subnets e gateways precisam existir.
-- Os **outputs do LAB 01** (`terraform output` em `lab-01/terraform`):
-  `vcn_id`, `public_subnet_id`, `private_subnet_id`.
-- API Key configurada (mesma do LAB 01) e **OCI CLI** instalado (para gerar o kubeconfig).
-- `kubectl` instalado.
+**Ferramentas** (instalação por SO — macOS/Linux/Windows/WSL):
+➡️ ver [Ferramentas e Pré-requisitos](../lab-01/docs/prerequisites/README.md).
+Você precisa de: **Terraform ≥ 1.5**, **OCI CLI**, **kubectl**, **jq**.
+
+> ⚠️ **Ambiente testado: macOS.** Comandos podem variar em Linux/Windows. Em
+> Windows, use **WSL2** para rodar os scripts `.sh` (não funcionam no PowerShell).
+
+**Do LAB 01, você precisa ter em mãos:**
+
+- **LAB 01 aplicado** — VCN, subnets e gateways existindo (`terraform apply` feito).
+- Os **3 OCIDs de rede** (saída de `terraform output` em `lab-01/terraform`):
+  - `vcn_id` — OCID da VCN
+  - `public_subnet_id` — subnet pública (endpoint do control plane + LBs)
+  - `private_subnet_id` — subnet privada (worker nodes)
+- A **mesma AUTH do LAB 01** (tenancy/user/fingerprint/private_key/region) — o
+  `gen-tfvars.sh` copia isso automaticamente do `lab-01/terraform/terraform.tfvars`.
+
+> **Versão do Kubernetes:** as versões OKE mudam. Em 09/2026 existem
+> **1.34.x, 1.35.x, 1.36.x** — **não existe 1.33**. Confira antes (seção 6).
 
 ## 3. Conceitos
 
@@ -62,16 +76,18 @@ O control plane usa a **subnet pública** do LAB 01 para o endpoint e os LBs; os
 
 ```bash
 cd lab-02/terraform
-../scripts/gen-tfvars.sh          # cria terraform.tfvars e injeta vcn_id/subnets do LAB 01
-# preencha a AUTH no terraform.tfvars (ou use ~/.oci/config)
+../scripts/gen-tfvars.sh          # cria terraform.tfvars, injeta vcn_id/subnets E a auth do LAB 01
 terraform init
 terraform plan  -var-file=terraform.tfvars
 terraform apply -var-file=terraform.tfvars
 ```
 
 O `gen-tfvars.sh` lê `vcn_id`, `public_subnet_id` e `private_subnet_id` do state do
-LAB 01 via `terraform output -raw` (não faz parse frágil de texto) e grava no
-`terraform.tfvars` — assim você não copia OCID à mão. Ele **não** mexe na auth.
+LAB 01 via `terraform output -raw`, **e também copia a AUTH** (tenancy/user/
+fingerprint/private_key_path/region) do `lab-01/terraform/terraform.tfvars` —
+os dois labs usam a mesma API Key. Assim você não copia nada à mão. Se o
+`lab-01/terraform.tfvars` não existir (auth vinda só do `~/.oci/config`), o script
+avisa e você preenche a auth do lab-02 manualmente.
 
 **Opção manual:**
 
@@ -84,12 +100,30 @@ terraform plan  -var-file=terraform.tfvars
 terraform apply -var-file=terraform.tfvars
 ```
 
-> **Versão do Kubernetes:** confira as versões suportadas na região ANTES de aplicar:
+**Windows nativo (sem WSL) / manual — sem o script:**
+
+O `gen-tfvars.sh` é bash e **não roda no PowerShell**. Nesse caso, faça à mão:
+
+1. Copie o exemplo: `copy example.tfvars terraform.tfvars` (PowerShell) /
+   `cp example.tfvars terraform.tfvars` (bash).
+2. Pegue os 3 OCIDs de rede do LAB 01:
+   ```bash
+   cd ../../lab-01/terraform
+   terraform output -raw vcn_id
+   terraform output -raw public_subnet_id
+   terraform output -raw private_subnet_id
+   ```
+3. Cole cada valor no `terraform.tfvars` do lab-02 (`vcn_id`, `public_subnet_id`,
+   `private_subnet_id`).
+4. Preencha a AUTH (`tenancy_ocid`, `user_ocid`, `fingerprint`, `private_key_path`,
+   `region`) com os mesmos valores do LAB 01.
+
+> **Descobrir a versão do Kubernetes suportada** (ajuste `kubernetes_version` no
+> `terraform.tfvars` — em 09/2026 existem 1.34.x/1.35.x/1.36.x, **não** 1.33):
 > ```bash
 > oci ce cluster-options get --cluster-option-id all \
 >   --query 'data."kubernetes-versions"' --output table
 > ```
-> Ajuste `kubernetes_version` no `terraform.tfvars` se `v1.33.1` não estiver disponível.
 
 Depois do apply, gere o kubeconfig (o comando exato sai no output `kubeconfig_command`):
 

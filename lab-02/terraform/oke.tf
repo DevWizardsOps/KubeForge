@@ -42,14 +42,20 @@ resource "oci_containerengine_cluster" "this" {
 }
 
 # ---------- Imagem do node (mais recente ARM64 p/ a versão do K8s) ----------
-# Filtra as sources do node pool option para o shape A1 e a versão do cluster.
+# Seleção da imagem do node: ARM64 (aarch64) + Oracle Linux 9 + versão OKE exata.
+# Nome real das imagens: "Oracle-Linux-9.8-aarch64-2026.08.14-0-OKE-1.34.10-1820".
 locals {
-  # sources compatíveis com a versão do cluster
-  matching_sources = [
+  k8s_clean = replace(var.kubernetes_version, "v", "") # ex: "1.34.10"
+
+  arm_sources = [
     for s in data.oci_containerengine_node_pool_option.np_options.sources :
-    s if can(regex(replace(var.kubernetes_version, "v", ""), s.source_name))
+    s if can(regex("(?i)aarch64", s.source_name)) &&
+    can(regex("Oracle-Linux-9", s.source_name)) &&
+    can(regex("OKE-${replace(local.k8s_clean, ".", "\\.")}(-|$)", s.source_name))
   ]
-  node_image_id = length(local.matching_sources) > 0 ? local.matching_sources[0].image_id : null
+
+  # última da lista filtrada (normalmente a mais recente)
+  node_image_id = length(local.arm_sources) > 0 ? local.arm_sources[length(local.arm_sources) - 1].image_id : ""
 }
 
 # ---------- Node Pool ----------
@@ -85,6 +91,13 @@ resource "oci_containerengine_node_pool" "arm" {
 
   # Garante que o sizing cabe na cota antes de criar (ver terraform_data guard).
   depends_on = [terraform_data.free_tier_guard]
+
+  lifecycle {
+    precondition {
+      condition     = local.node_image_id != ""
+      error_message = "Nenhuma imagem OKE ARM64 (aarch64) Oracle-Linux-9 encontrada para a versão ${var.kubernetes_version}. Rode 'oci ce cluster-options get --cluster-option-id all --query 'data.\"kubernetes-versions\"'' e ajuste kubernetes_version (existem 1.34.x/1.35.x/1.36.x)."
+    }
+  }
 
   freeform_tags = local.common_tags
 }

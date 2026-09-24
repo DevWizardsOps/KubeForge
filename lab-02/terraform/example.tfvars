@@ -18,7 +18,7 @@ public_subnet_id  = "ocid1.subnet.oc1.sa-saopaulo-1...(publica)"
 private_subnet_id = "ocid1.subnet.oc1.sa-saopaulo-1...(privada)"
 
 # --- Kubernetes ---
-kubernetes_version = "v1.33.1" # confira as versões suportadas na região antes (ver README)
+kubernetes_version = "v1.34.10" # confira as versões suportadas na região antes (ver README). NÃO existe 1.33.
 cluster_type       = "BASIC_CLUSTER"
 
 # --- Node Pool Ampere A1 (cota Always Free: 2 OCPU / 12 GB total desde 15/06/2026) ---

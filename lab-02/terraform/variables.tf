@@ -67,8 +67,8 @@ variable "environment" {
 # ---------- Kubernetes ----------
 variable "kubernetes_version" {
   type        = string
-  description = "Versão do Kubernetes do OKE. Verificar as suportadas na região antes (ver README)."
-  default     = "v1.33.1"
+  description = "Versão do OKE. Verifique as suportadas na região ANTES (README). Em 09/2026 existem 1.34.x, 1.35.x, 1.36.x — NÃO existe 1.33."
+  default     = "v1.34.10"
 }
 
 variable "cluster_type" {
