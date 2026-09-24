@@ -23,6 +23,8 @@ Preparar a fundação na **Oracle Cloud Infrastructure (OCI)**:
 
 ➡️ **Para o Terraform:** [Gerar a Credencial de API (API Key)](docs/api-credentials/README.md)
 
+🛠️ **Ferramentas (Terraform/OCI CLI/kubectl/jq — por SO):** [Ferramentas e Pré-requisitos](docs/prerequisites/README.md)
+
 ➡️ **Opcional (DNS real p/ TLS nos labs 11-12):** [DNS gratuito com Dynu](docs/dynu-dns/README.md) — registre agora para não travar depois.
 
 ## 3. Conceitos
