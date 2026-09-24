@@ -104,6 +104,20 @@ Ao concluir, o pop-up confirma com **Thank you!**. Clique em **Close**.
 
 ![Pop-up "Oracle Pay" confirmando com "Thank you!"](images/09-payment-thank-you.png)
 
+> 🚨 **ALERTA IMPORTANTE — bloqueie o cartão logo após a validação.**
+> A Oracle valida o cartão com uma cobrança simbólica (estornada). **Assim que a
+> conta for criada e o cartão validado**, o recomendado é **bloquear/desativar
+> esse cartão no app do seu banco** (ou usar um cartão descartável só para este
+> cadastro). Motivo: se você **esquecer um recurso ligado** que saia do
+> Always Free (um segundo Load Balancer, banda de LB acima de 10 Mbps, storage
+> além da cota, upgrade acidental para Pay As You Go), a Oracle **cobra no cartão
+> cadastrado** — e você só descobre na fatura. Bloquear o cartão é a rede de
+> segurança contra cobrança esquecida. Para voltar a criar recursos pagos de
+> propósito, é só reativar o cartão na hora.
+>
+> A cobrança de validação já terá sido feita e estornada antes do bloqueio —
+> bloquear **depois** da validação não atrapalha a criação da conta.
+
 ### 8. Aceitar o contrato e criar a conta
 
 De volta ao formulário, marque a caixa do **Contrato** (Contrato de Serviços de Cloud da Oracle) e
