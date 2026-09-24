@@ -1,0 +1,101 @@
+# ==========================================================================
+# KubeForge — .gitignore
+# Regra de ouro: NUNCA versionar credenciais, state remoto sensível ou binários.
+# ==========================================================================
+
+# ---------- Segredos / Credenciais (NUNCA commitar) ----------
+*.pem
+*.key
+*.p12
+*.pfx
+*.crt
+*.cer
+id_rsa*
+id_ed25519*
+.env
+.env.*
+!.env.example
+secrets.*
+*secret*.yaml
+*secret*.yml
+# OCI CLI / SDK
+.oci/
+oci_api_key*.pem
+# kubeconfig
+kubeconfig
+*.kubeconfig
+.kube/
+# Cloud creds diversos
+credentials
+.aws/
+.gcp/
+gcp-*.json
+
+# ---------- Terraform ----------
+**/.terraform/
+**/.terraform.lock.hcl
+*.tfstate
+*.tfstate.*
+*.tfstate.backup
+crash.log
+crash.*.log
+*.tfvars
+*.tfvars.json
+!example.tfvars
+!*.example.tfvars
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
+.terraformrc
+terraform.rc
+.terraform.tfstate.lock.info
+
+# ---------- Kubernetes / Helm ----------
+# Charts baixados/empacotados
+charts/*.tgz
+**/charts/*.tgz
+Chart.lock
+# Dependências vendorizadas do Helm (opcional — remova se quiser versionar)
+# **/charts/
+# Renderizações e diffs temporários
+*.rendered.yaml
+kustomize-build-output.yaml
+
+# ---------- Container / Build ----------
+*.tar
+*.tar.gz
+sbom.json
+sbom.spdx.json
+*.sig
+*.att
+
+# ---------- Editores / IDE ----------
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.local/
+
+# ---------- Sistema Operacional ----------
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+Desktop.ini
+
+# ---------- Logs / Temporários ----------
+*.log
+logs/
+tmp/
+*.bak
+*.tmp
+
+# ---------- Ferramentas locais ----------
+.direnv/
+.envrc
+node_modules/
