@@ -168,11 +168,33 @@ A coluna **ARCH = arm64** é a prova de que o node é Ampere A1.
 
 | Sintoma | Causa | Ação |
 |---|---|---|
-| `Out of host capacity` | Sem A1 livre em Sao Paulo | Repetir o apply mais tarde; tentar outra AD; script de retry |
+| `Out of host capacity` | Sem estoque de A1 em Sao Paulo | **NÃO é erro de config.** O cluster já subiu; só o node pool falhou. Rode o retry (abaixo) — `terraform apply` é idempotente e não recria o cluster |
 | node fica `NotReady` | rota/NAT ausente | Conferir a route table privada do LAB 01 (NAT + SGW) |
 | `kubectl` timeout | endpoint/token | Regerar kubeconfig; conferir `--kube-endpoint PUBLIC_ENDPOINT` |
 | versão K8s inválida | `kubernetes_version` fora da lista | `oci ce cluster-options get` e ajustar |
 | plan estoura o guard | sizing > 2 OCPU/12 GB | Ajustar `node_count`/`node_ocpus`/`node_memory_gbs` |
+
+### 10.1 "Out of host capacity" — o mais comum
+
+O control plane do OKE sobe fácil, mas o **node pool A1 falha** quando a Oracle
+não tem estoque de Ampere na AD naquele momento. **Não é erro de config** — o
+cluster já foi criado e está no state; só faltam os nodes. `terraform apply` é
+idempotente: re-rodar **não recria o cluster**, só tenta o node pool de novo.
+
+Retry automático com backoff (a partir de `lab-02/terraform`):
+
+```bash
+../scripts/retry-nodepool.sh          # 30 tentativas x 120s (~1h)
+../scripts/retry-nodepool.sh 60 180   # ou: 60 tentativas x 180s (~3h)
+```
+
+O script re-tenta enquanto o erro for `Out of host capacity`; para na hora se
+falhar por outro motivo. Windows: rode no **WSL2** (é bash) ou faça `terraform
+apply` manualmente em loop.
+
+Outras mitigações: tentar em horário de menor demanda; se sua região tiver mais
+de uma AD, distribuir o node pool; em último caso, considerar outra região home
+(mas a home é imutável — isso seria conta nova).
 
 ## 11. Challenge
 
