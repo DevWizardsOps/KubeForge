@@ -58,6 +58,23 @@ O control plane usa a **subnet pública** do LAB 01 para o endpoint e os LBs; os
 
 ## 6. Terraform
 
+**Opção rápida — script que puxa os OCIDs do LAB 01 automaticamente:**
+
+```bash
+cd lab-02/terraform
+../scripts/gen-tfvars.sh          # cria terraform.tfvars e injeta vcn_id/subnets do LAB 01
+# preencha a AUTH no terraform.tfvars (ou use ~/.oci/config)
+terraform init
+terraform plan  -var-file=terraform.tfvars
+terraform apply -var-file=terraform.tfvars
+```
+
+O `gen-tfvars.sh` lê `vcn_id`, `public_subnet_id` e `private_subnet_id` do state do
+LAB 01 via `terraform output -raw` (não faz parse frágil de texto) e grava no
+`terraform.tfvars` — assim você não copia OCID à mão. Ele **não** mexe na auth.
+
+**Opção manual:**
+
 ```bash
 cd lab-02/terraform
 cp example.tfvars terraform.tfvars   # preencha auth + vcn_id/subnets do LAB 01
