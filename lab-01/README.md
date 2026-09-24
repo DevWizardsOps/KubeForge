@@ -21,6 +21,8 @@ Preparar a fundação na **Oracle Cloud Infrastructure (OCI)**:
 
 ➡️ **Comece por aqui:** [Criação da Conta Oracle Cloud Free Tier](docs/account-setup/README.md)
 
+➡️ **Para o Terraform:** [Gerar a Credencial de API (API Key)](docs/api-credentials/README.md)
+
 ## 3. Conceitos
 
 - OCI, Compartments, IAM (usuários, grupos, políticas)
@@ -29,6 +31,8 @@ Preparar a fundação na **Oracle Cloud Infrastructure (OCI)**:
 - Security Lists e Network Security Groups (NSG)
 
 ## 4. Arquitetura
+
+📐 **Explicação detalhada, recurso a recurso, com diagrama:** [Arquitetura da Rede — o que subimos e por quê](docs/architecture/README.md)
 
 ```text
 Oracle Cloud (Region: Brazil East - Sao Paulo)
@@ -89,6 +93,7 @@ necessário para gerenciar rede — tudo via Terraform.
 ## 12. Resultado esperado
 
 - Conta Free Tier ativa (região Sao Paulo).
+- `terraform plan` → **10 recursos a criar** (VCN, IGW, NAT GW, Service GW, 2 route tables, 2 security lists, 2 subnets).
 - VCN funcional com sub-redes pública e privada.
 - Estado Terraform versionável (sem segredos).
 
