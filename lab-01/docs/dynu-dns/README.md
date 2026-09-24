@@ -14,7 +14,7 @@ público para um IP nem para um hostname interno.
 
 O [Dynu](https://www.dynu.com) resolve isso de graça:
 
-- **Subdomínio grátis** (ex.: `kubeforge.freeddns.org`) ou hospedagem DNS do seu
+- **Subdomínio grátis** (ex.: `kubeforge.ddnsfree.com`) ou hospedagem DNS do seu
   domínio próprio.
 - **API v2** para criar/editar registros DNS por código — essencial para o
   desafio **DNS-01** do cert-manager (certificado **wildcard** `*.kubeforge...`)
@@ -27,16 +27,21 @@ O [Dynu](https://www.dynu.com) resolve isso de graça:
 ## 1. Criar a conta e o hostname
 
 1. Acesse <https://www.dynu.com> → **Sign Up** (gratuito).
-2. No painel → **DDNS Services** → **Add** → escolha um subdomínio gratuito
-   (ex.: `kubeforge.freeddns.org`) ou adicione seu domínio próprio.
-3. Crie o hostname. Ele já nasce com um registro A que você vai repontar para o
-   IP do Load Balancer da OCI mais tarde.
+2. No painel → **DDNS Services** → **Add** → tela **Add Dynamic DNS**.
+3. Em **Option 1: Use Our Domain Name**, preencha:
+   - **Host**: o nome que você quer (ex.: `kubeforge`)
+   - **Top Level**: escolha **`ddnsfree.com`** no dropdown
+   - Clique em **Add** → o hostname `kubeforge.ddnsfree.com` é criado.
+   (Alternativa: **Option 2** para adicionar um domínio próprio que você já possua.)
 
 ## 2. Pegar a API Key
 
 1. Painel → **Control Panel → API Credentials**
    (<https://www.dynu.com/en-US/ControlPanel/APICredentials>).
-2. Em **API Key**, clique no ícone **View** e copie a chave.
+2. Em **API Key**, clique no ícone **View** para revelar a chave e copie-a. Se
+   ainda não existir uma, clique em **Generate/Regenerate** para criar a primeira.
+   Use a **API Key** simples (não o OAuth2) — é ela que os exemplos `curl` e o
+   cert-manager (LAB 12) consomem.
 
 > 🔒 A API Key é uma credencial: guarde fora do Git (ex.: variável de ambiente
 > `DYNU_API_KEY`). O `.gitignore` do repo já bloqueia `.env`.
@@ -53,7 +58,7 @@ curl -s https://api.dynu.com/v2/dns -H "API-Key: $DYNU_API_KEY" | jq
 curl -s -X POST "https://api.dynu.com/v2/dns/{DOMAINID}" \
   -H "API-Key: $DYNU_API_KEY" \
   -H "Content-Type: application/json" \
-  -d '{"name":"kubeforge.freeddns.org","ipv4Address":"<IP-do-LoadBalancer-OCI>"}'
+  -d '{"name":"kubeforge.ddnsfree.com","ipv4Address":"<IP-do-LoadBalancer-OCI>"}'
 ```
 
 ## Onde isto será usado na trilha
@@ -67,6 +72,11 @@ curl -s -X POST "https://api.dynu.com/v2/dns/{DOMAINID}" \
 O cert-manager tem webhook/solver de DNS-01 que fala com a API do Dynu — o
 LAB 12 detalha a configuração (o `ClusterIssuer` usa a `DYNU_API_KEY` guardada
 num Secret do Kubernetes).
+
+## Referências
+
+- Documentação oficial da API do Dynu: <https://www.dynu.com/en-US/Support/API>
+- Endpoint base da API v2: `https://api.dynu.com/v2/dns`
 
 ## Cost Considerations
 
