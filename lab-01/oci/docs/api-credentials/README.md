@@ -112,7 +112,7 @@ tela do perfil.
 ## 6. Preencher o Terraform
 
 ```bash
-cd lab-01/terraform
+cd lab-01/oci/terraform
 cp example.tfvars terraform.tfvars
 $EDITOR terraform.tfvars
 ```

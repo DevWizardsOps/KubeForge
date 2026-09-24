@@ -1,8 +1,12 @@
 # LAB 02 — Kubernetes com OKE
 
+> ⚠️ **Opção B (alternativa).** Parte do caminho **Oracle Cloud**. Depende do [LAB 01/OCI](../lab-01/oci/README.md)
+> e do estoque de **Ampere A1** em São Paulo, hoje bloqueado por `Out of host capacity`.
+> **A trilha ativa é a [Opção A — AWS Academy + k3s ARM64](../lab-01/aws/README.md).**
+
 > Segundo laboratório do [KubeForge](../README.md). Cria o primeiro cluster
 > **Oracle Kubernetes Engine (OKE)** com worker nodes **Ampere A1 (ARM64)**,
-> reutilizando a rede do [LAB 01](../lab-01/README.md).
+> reutilizando a rede do [LAB 01](../lab-01/oci/README.md).
 
 ## 1. Objetivo
 
@@ -16,7 +20,7 @@ Terraform → OCI → OKE → Ampere A1 (ARM64)
 ## 2. Pré-requisitos
 
 **Ferramentas** (instalação por SO — macOS/Linux/Windows/WSL):
-➡️ ver [Ferramentas e Pré-requisitos](../lab-01/docs/prerequisites/README.md).
+➡️ ver [Ferramentas e Pré-requisitos](../lab-01/oci/docs/prerequisites/README.md).
 Você precisa de: **Terraform ≥ 1.5**, **OCI CLI**, **kubectl**, **jq**.
 
 > ⚠️ **Ambiente testado: macOS.** Comandos podem variar em Linux/Windows. Em
@@ -25,12 +29,12 @@ Você precisa de: **Terraform ≥ 1.5**, **OCI CLI**, **kubectl**, **jq**.
 **Do LAB 01, você precisa ter em mãos:**
 
 - **LAB 01 aplicado** — VCN, subnets e gateways existindo (`terraform apply` feito).
-- Os **3 OCIDs de rede** (saída de `terraform output` em `lab-01/terraform`):
+- Os **3 OCIDs de rede** (saída de `terraform output` em `lab-01/oci/terraform`):
   - `vcn_id` — OCID da VCN
   - `public_subnet_id` — subnet pública (endpoint do control plane + LBs)
   - `private_subnet_id` — subnet privada (worker nodes)
 - A **mesma AUTH do LAB 01** (tenancy/user/fingerprint/private_key/region) — o
-  `gen-tfvars.sh` copia isso automaticamente do `lab-01/terraform/terraform.tfvars`.
+  `gen-tfvars.sh` copia isso automaticamente do `lab-01/oci/terraform/terraform.tfvars`.
 
 > **Versão do Kubernetes:** as versões OKE mudam. Em 09/2026 existem
 > **1.34.x, 1.35.x, 1.36.x** — **não existe 1.33**. Confira antes (seção 6).
@@ -84,9 +88,9 @@ terraform apply -var-file=terraform.tfvars
 
 O `gen-tfvars.sh` lê `vcn_id`, `public_subnet_id` e `private_subnet_id` do state do
 LAB 01 via `terraform output -raw`, **e também copia a AUTH** (tenancy/user/
-fingerprint/private_key_path/region) do `lab-01/terraform/terraform.tfvars` —
+fingerprint/private_key_path/region) do `lab-01/oci/terraform/terraform.tfvars` —
 os dois labs usam a mesma API Key. Assim você não copia nada à mão. Se o
-`lab-01/terraform.tfvars` não existir (auth vinda só do `~/.oci/config`), o script
+`lab-01/oci/terraform.tfvars` não existir (auth vinda só do `~/.oci/config`), o script
 avisa e você preenche a auth do lab-02 manualmente.
 
 **Opção manual:**
@@ -108,7 +112,7 @@ O `gen-tfvars.sh` é bash e **não roda no PowerShell**. Nesse caso, faça à m�
    `cp example.tfvars terraform.tfvars` (bash).
 2. Pegue os 3 OCIDs de rede do LAB 01:
    ```bash
-   cd ../../lab-01/terraform
+   cd ../../lab-01/oci/terraform
    terraform output -raw vcn_id
    terraform output -raw public_subnet_id
    terraform output -raw private_subnet_id

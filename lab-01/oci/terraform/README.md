@@ -25,7 +25,7 @@ pelo **LAB 02 (OKE)**.
 ## Como rodar
 
 ```bash
-cd lab-01/terraform
+cd lab-01/oci/terraform
 cp example.tfvars terraform.tfvars   # preencha com seus OCIDs/fingerprint
 terraform init
 terraform fmt -check

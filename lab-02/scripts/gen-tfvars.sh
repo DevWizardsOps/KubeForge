@@ -17,7 +17,7 @@
 set -euo pipefail
 
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)/terraform"   # lab-02/terraform
-LAB01_TF="$(cd "$HERE/../../lab-01/terraform" && pwd)"
+LAB01_TF="$(cd "$HERE/../../lab-01/oci/terraform" && pwd)"
 TFVARS="$HERE/terraform.tfvars"
 EXAMPLE="$HERE/example.tfvars"
 
@@ -71,7 +71,7 @@ if [ -f "$LAB01_TFVARS" ] && ! grep -q 'aaaa\.\.\.' "$LAB01_TFVARS"; then
   done
   echo "==> AUTH copiada do LAB 01."
 else
-  echo "==> AUTH NÃO copiada (lab-01/terraform.tfvars ausente ou com placeholders)."
+  echo "==> AUTH NÃO copiada (lab-01/oci/terraform.tfvars ausente ou com placeholders)."
   echo "    Preencha tenancy/user/fingerprint no $TFVARS à mão OU use ~/.oci/config."
 fi
 

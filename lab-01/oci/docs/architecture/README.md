@@ -157,7 +157,7 @@ O primeiro custo (dentro do Free Tier) aparece no LAB 02 com o Ampere A1
 ## Como destruir
 
 ```bash
-cd lab-01/terraform
+cd lab-01/oci/terraform
 terraform destroy -var-file=terraform.tfvars
 ```
 

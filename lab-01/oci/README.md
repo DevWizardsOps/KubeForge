@@ -1,6 +1,11 @@
 # LAB 01 — OCI Foundation
 
-> Primeiro laboratório da trilha [KubeForge](../README.md). Objetivo: conhecer a Oracle Cloud,
+> ⚠️ **Opção B (alternativa).** Este caminho usa **Oracle Cloud (OKE / Ampere A1 ARM64)**.
+> Em set/2026 ficou **bloqueado por `Out of host capacity`** do Ampere A1 em São Paulo — o
+> cluster subia, mas o node pool não encontrava estoque. O código é válido e volta a funcionar
+> assim que a Oracle liberar capacidade. **A trilha ativa é a [Opção A — AWS Academy + k3s ARM64](../aws/README.md).**
+
+> Primeiro laboratório da trilha [KubeForge](../../README.md) — **Opção B (alternativa)**. Objetivo: conhecer a Oracle Cloud,
 > criar a conta Free Tier e preparar a infraestrutura de rede base (VCN) sobre a qual o cluster
 > **OKE / Ampere A1 (ARM64)** será construído no LAB 02.
 
