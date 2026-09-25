@@ -111,14 +111,24 @@ Só depois que o staging deu READY=True:
 
 ## 9. Troubleshooting
 
+> ✅ **Validado end-to-end (25/09/2026) num Learner Lab real:** o HTTP-01 **funciona** —
+> a borda do Learner Lab deixa 80/443 públicas passarem quando o security group as abre.
+> `whoami-tls` chegou a `READY=True` e `curl http://<hostname>` respondeu `HTTP 200`.
+> A emissão do Let's Encrypt não é bloqueada pelo ambiente.
+
 | Sintoma | Causa | Ação |
 |---|---|---|
-| `certificate` fica READY=False | desafio HTTP-01 não validou | `kubectl describe challenge` — ver o erro |
+| `certificate` fica READY=False por muito tempo | **`expose_web` não foi aplicado** (porta 80 fechada) | Confirme no state: `terraform state show aws_security_group.k3s \| grep 'from_port = 80'`. Se não aparecer, `expose_web=true` + `terraform apply`. **Esta foi a causa real na 1ª execução.** |
+| `terraform plan` falha em `ingress.N.description ... doesn't comply` | **acento/caractere não-ASCII** na description da regra de SG (a AWS só aceita ASCII básico) | Use só ASCII na `description` (sem `ú`, `—`, etc.). |
 | Challenge: `connection refused` / timeout | porta 80 não chega no server | confirme `expose_web=true` + `terraform apply`; `dig` batendo no IP |
 | `certificate` preso em `pending` | DNS não resolve pro server | `dig +short <hostname>` deve dar o IP do server (LAB 01 DDNS) |
 | Rate limit do LE prod | emitiu 5x na semana | volte pro staging; espere a janela; nunca itere no prod |
 | Browser: `NET::ERR_CERT_AUTHORITY_INVALID` | você está no cert **staging** | promova pro prod (seção 7) — staging é intencionalmente não-confiável |
 | `no matches for kind Certificate` | cert-manager não instalado | rode `scripts/install-cert-manager.sh` |
+
+> 💡 **Forçar retry sem esperar:** se você corrigiu a porta 80 com o cert já preso em False,
+> `kubectl delete challenge --all; kubectl delete certificaterequest --all` faz o cert-manager
+> retentar o HTTP-01 na hora (em vez de esperar o backoff).
 
 ## 10. Limpeza
 
@@ -132,4 +142,4 @@ Se quiser fechar 80/443 de novo: `expose_web = false` + `terraform apply` no LAB
 
 ---
 
-**ARM64:** cert-manager e whoami são multi-arch (rodam em Graviton) · **Custo:** zero (Let's Encrypt é grátis)
+**ARM64:** cert-manager e whoami são multi-arch (rodam em Graviton) · **Custo:** zero (Let's Encrypt é grátis) · **Status:** ✅ validado end-to-end no Learner Lab (HTTP-01, cert staging emitido, HTTP 200)
