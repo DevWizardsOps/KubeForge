@@ -170,7 +170,7 @@ resource "aws_security_group" "k3s" {
   dynamic "ingress" {
     for_each = var.expose_web ? [80, 443] : []
     content {
-      description = "Web (HTTP/HTTPS) público — ACME HTTP-01 / Ingress"
+      description = "Web HTTP/HTTPS publico (ACME HTTP-01 / Ingress)"
       from_port   = ingress.value
       to_port     = ingress.value
       protocol    = "tcp"
