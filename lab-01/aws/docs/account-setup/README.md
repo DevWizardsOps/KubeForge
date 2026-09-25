@@ -5,10 +5,32 @@ Guia de acesso ao ambiente da **Opção A**. O Learner Lab dá uma conta AWS tem
 
 ## 1. Acessar o lab
 
-1. Entre no curso do **AWS Academy** (via Canvas/LMS da sua instituição).
-2. Abra o módulo **Learner Lab** e clique em **Start Lab**.
-3. Espere o indicador ao lado de **AWS** ficar **verde** (ambiente pronto).
-4. Clique em **AWS** para abrir o **Management Console** já autenticado.
+1. Você recebe um **email de convite** (Canvas) com o link do curso:
+
+   ![Email Canvas: curso criado](../images/01-canvas-email-course-created.png)
+
+2. Faça login no **AWS Academy** (Canvas):
+
+   ![Login AWS Academy](../images/02-aws-academy-login.png)
+
+3. Abra o curso **AWS Academy Learner Lab** — esta é a página inicial:
+
+   ![Página inicial do curso](../images/03-course-home.png)
+
+4. No menu lateral, clique em **Módulos** e desça até **"Iniciar os laboratórios de
+   aprendizagem da AWS Academy"**:
+
+   ![Módulos](../images/04-modulos.png)
+
+5. Abra o laboratório e clique em **Start Lab**. Espere o indicador ao lado de **AWS**
+   ficar **verde**; então clique em **AWS** para abrir o console autenticado:
+
+   ![Terminal do lab + Start Lab](../images/05-iniciar-laboratorios-terminal.png)
+
+6. Você cai no **AWS Management Console** já logado (repare no cronômetro da sessão e no
+   nome `voclabs/user...`):
+
+   ![Console AWS logado](../images/06-console-aws-logado.png)
 
 > ⏱️ **Sessão de 4 horas.** Um cronômetro conta no topo. Ao zerar (ou ao clicar **End Lab**),
 > as instâncias EC2 **param** (stop) — não são deletadas. Você pode reiniciá-las na próxima sessão.
@@ -17,7 +39,10 @@ Guia de acesso ao ambiente da **Opção A**. O Learner Lab dá uma conta AWS tem
 
 Se for usar a **AWS CLI** local (para checar limites ou lançar a EC2 por linha de comando):
 
-1. No painel do lab, clique em **AWS Details**.
+1. No painel do lab, clique em **AWS Details**:
+
+   ![AWS Details](../images/07-aws-details.png)
+
 2. Copie o bloco **AWS CLI** — ele traz `aws_access_key_id`, `aws_secret_access_key` e
    **`aws_session_token`** (as três são obrigatórias; são credenciais **temporárias**).
 3. Cole em `~/.aws/credentials` sob um profile dedicado, ex.:

@@ -45,11 +45,22 @@ consegue repointar IP — e é revogável. O próprio Dynu recomenda:
 3. Salve. O hostname existe agora (aponta pro seu IP atual — será sobrescrito pelo
    server quando o lab subir; isso é esperado).
 
+A tela **Manage Dynamic DNS Service** do hostname fica assim (repare no IPv4 atual e no
+link **IP Update Password** no rodapé):
+
+![Dynu — Manage Dynamic DNS](../images/dynu-01-manage-ddns.png)
+
 ## 4. Criar a IP Update Password (uma vez)
 
 1. Control Panel → **My Account** → **Manage Credentials** (a tela "Change
-   Username/Password").
-2. Preencha **exatamente 3 campos**:
+   Username/Password"):
+
+   ![Dynu — Manage Credentials](../images/dynu-02-manage-credentials.png)
+
+2. Preencha **exatamente 3 campos** (destaque nos campos certos):
+
+   ![Dynu — campos IP Update Password](../images/dynu-03-ip-update-password-campos.png)
+
    - **Current Password** → a senha **da sua conta** Dynu (a de login). Só autoriza a mudança.
    - **New IP Update Password** → invente uma senha nova (4-20 chars, **sem espaços**).
      Ex.: `kubeforge-ipupd-2026` (use a sua).
