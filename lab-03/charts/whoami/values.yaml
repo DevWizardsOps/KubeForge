@@ -1,0 +1,28 @@
+# values.yaml — os "botões" do chart. Tudo aqui é sobrescrevível com --set ou -f.
+# É a diferença do Helm para YAML solto: um template, N configurações.
+
+replicaCount: 2
+
+image:
+  repository: traefik/whoami
+  tag: v1.10.3          # casa com appVersion no Chart.yaml
+  pullPolicy: IfNotPresent
+
+resources:
+  requests:
+    cpu: 10m
+    memory: 16Mi
+  limits:
+    cpu: 100m
+    memory: 64Mi
+
+service:
+  port: 80
+
+# Ingress + TLS via cert-manager (reaproveita o issuer do LAB 02).
+ingress:
+  enabled: true
+  className: traefik
+  clusterIssuer: letsencrypt-prod
+  host: kubeforge-mwl.ddnsgeek.com   # <-- TROQUE pelo SEU hostname (o do DDNS do LAB 01)
+  tlsSecretName: whoami-tls

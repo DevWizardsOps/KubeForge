@@ -62,7 +62,8 @@ Para QUALQUER lab, siga esta ordem — é o que faz o conceito "colar":
 | Lab | Tema | README | Guia de ensino |
 |-----|------|--------|----------------|
 | 01 | AWS Academy + k3s ARM64 | `~/git/KubeForge/lab-01/README.md` | `references/lab-01-aws.md` |
-| 03 | Certificado TLS (cert-manager + Let's Encrypt) | `~/git/KubeForge/lab-02/README.md` | `references/lab-02-tls.md` |
+| 02 | Certificado TLS (cert-manager + Let's Encrypt) | `~/git/KubeForge/lab-02/README.md` | `references/lab-02-tls.md` |
+| 03 | Helm (empacotamento) | `~/git/KubeForge/lab-03/README.md` | `references/lab-03-helm.md` |
 
 > Esta tabela cresce conforme novos labs são feitos. Ao concluir um lab novo,
 > adicione a linha aqui E crie o `references/lab-NN-*.md` correspondente.

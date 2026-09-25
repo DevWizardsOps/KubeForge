@@ -1,0 +1,6 @@
+apiVersion: v2
+name: whoami
+description: App de exemplo (traefik/whoami) empacotado como Helm chart — LAB 03 do KubeForge
+type: application
+version: 0.1.0          # versão do CHART (SemVer) — muda quando o chart muda
+appVersion: "1.10.3"   # versão do APP empacotado (traefik/whoami)
