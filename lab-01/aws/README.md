@@ -120,6 +120,10 @@ Ambos são **idempotentes**: pós-reset, se o k3s já está ativo, não reinstal
 
 ## 7. DNS dinâmico (Dynu) — IP estável entre sessões
 
+> 📘 **Guia detalhado passo a passo:** [docs/dynu-ddns/README.md](docs/dynu-ddns/README.md)
+> — conceito, as duas senhas do Dynu, criação do hostname, validação e troubleshooting.
+> A seção abaixo é o resumo; o guia cobre os erros comuns (`badauth`, `nohost`, cert x509).
+
 O IP público do server **muda** a cada nova sessão do Learner Lab. Para não editar o
 kubeconfig toda vez, o server atualiza sozinho um **hostname DDNS** (Dynu) apontando para o
 IP novo, no boot e a cada 5 min. Assim o kubeconfig usa um nome fixo
