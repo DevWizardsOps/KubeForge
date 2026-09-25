@@ -62,7 +62,7 @@ variable "my_ip_cidr" {
 }
 
 variable "expose_web" {
-  description = "Abre 80/443 ao público (0.0.0.0/0) para o Ingress e o desafio ACME HTTP-01 do Let's Encrypt (LAB 03). false mantém o cluster fechado ao seu IP."
+  description = "Abre 80/443 ao público (0.0.0.0/0) para o Ingress e o desafio ACME HTTP-01 do Let's Encrypt (LAB 02). false mantém o cluster fechado ao seu IP."
   type        = bool
   default     = false
 }

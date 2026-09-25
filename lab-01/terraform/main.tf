@@ -1,5 +1,5 @@
 ###############################################################################
-# KubeForge — LAB 01 (Opção A): k3s multi-node no AWS Academy Learner Lab
+# KubeForge — LAB 01: k3s multi-node no AWS Academy Learner Lab
 #
 # Sobe uma VPC nova + N instâncias EC2 Graviton (ARM64) rodando k3s:
 #   - 1 server  (control-plane + worker)
@@ -173,7 +173,7 @@ resource "aws_security_group" "k3s" {
   }
 
   # HTTP/HTTPS — PÚBLICO (0.0.0.0/0) quando expose_web=true. Necessário para o
-  # desafio ACME HTTP-01 do Let's Encrypt (LAB 03): o LE valida acessando
+  # desafio ACME HTTP-01 do Let's Encrypt (LAB 02): o LE valida acessando
   # http://<hostname>/.well-known/acme-challenge/... a partir da internet.
   dynamic "ingress" {
     for_each = var.expose_web ? [80, 443] : []

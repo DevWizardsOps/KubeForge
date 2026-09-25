@@ -1,16 +1,16 @@
 # KubeForge
 
 Trilha prática de **Kubernetes Cloud Native** em 30 labs, com foco em **ARM64** e custo zero
-(ou quase). A fundação sobe nos labs 01-02; do LAB 03 em diante tudo é Kubernetes padrão,
+(ou quase). A fundação sobe no **LAB 01**; do LAB 02 em diante tudo é Kubernetes padrão,
 agnóstico de provedor.
 
-## Fundação (labs 01-02) — AWS Academy + k3s
+## Fundação (LAB 01) — AWS Academy + k3s
 
 Cluster **k3s multi-node** (1 server + N agents) sobre **EC2 Graviton (ARM64)** no
 **AWS Academy Learner Lab**, provisionado por Terraform. Sem cartão, sem custo de control
 plane (k3s roda nas próprias EC2), <US$1/sessão de crédito do Learner Lab.
 
-➡️ **[LAB 01 — AWS Academy + k3s](lab-01/aws/README.md)**
+➡️ **[LAB 01 — AWS Academy + k3s](lab-01/README.md)**
 
 > **Nota histórica:** a trilha começou na Oracle Cloud (OKE + Ampere A1 Always Free), mas o
 > A1 ficou cronicamente `Out of host capacity` em São Paulo (set/2026). Pivotamos para AWS
@@ -20,13 +20,13 @@ plane (k3s roda nas próprias EC2), <US$1/sessão de crédito do Learner Lab.
 ## Estrutura
 
 ```text
-lab-01/aws/   Fundação — AWS Academy + k3s ARM64 (Terraform + DDNS)
-lab-03/       Certificado TLS (cert-manager + Let's Encrypt) — provedor-agnóstico
+lab-01/   Fundação — AWS Academy + k3s ARM64 (Terraform + DDNS)
+lab-02/       Certificado TLS (cert-manager + Let's Encrypt) — provedor-agnóstico
 lab-NN/       Kubernetes padrão (agnóstico de provedor)
 skills/       Skill-tutor da trilha (ensino)
 ```
 
-➡️ **[LAB 03 — Certificado TLS (cert-manager + Let's Encrypt)](lab-03/README.md)** — HTTPS
+➡️ **[LAB 02 — Certificado TLS (cert-manager + Let's Encrypt)](lab-02/README.md)** — HTTPS
 válido no hostname DDNS, provedor-agnóstico.
 
 ## Tutor da trilha (skill)
@@ -43,5 +43,5 @@ ln -s "$(pwd)/skills/kubeforge-tutor" ~/.kiro/skills/kubeforge-tutor
 
 - **ARM64 first** — imagens e charts preferem `arm64`; o material assume esse alvo.
 - **Ambiente testado: macOS.** Comandos podem variar em Linux/Windows (use **WSL2** para os
-  scripts `.sh`). Pré-requisitos por SO em cada lab (ex.: [account-setup do LAB 01](lab-01/aws/docs/account-setup/README.md)).
+  scripts `.sh`). Pré-requisitos por SO em cada lab (ex.: [account-setup do LAB 01](lab-01/docs/account-setup/README.md)).
 - **Sem segredos no Git** — `*.tfvars`, `*.tfstate`, `*.pem` e credenciais são ignorados.

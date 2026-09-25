@@ -1,6 +1,6 @@
 # Ativar o AWS Academy Learner Lab
 
-Guia de acesso ao ambiente da **Opção A**. O Learner Lab dá uma conta AWS temporária
+Guia de acesso ao ambiente AWS. O Learner Lab dá uma conta AWS temporária
 (sem cartão) para lançar a EC2 onde o k3s vai rodar.
 
 ## 1. Acessar o lab

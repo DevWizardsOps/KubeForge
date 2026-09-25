@@ -1,6 +1,6 @@
-# Guia de ensino — LAB 03: Certificado TLS (cert-manager + Let's Encrypt)
+# Guia de ensino — LAB 02: Certificado TLS (cert-manager + Let's Encrypt)
 
-README do lab: `~/git/KubeForge/lab-03/README.md`
+README do lab: `~/git/KubeForge/lab-02/README.md`
 
 ## O problema que este lab resolve
 

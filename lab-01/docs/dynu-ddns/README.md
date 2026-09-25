@@ -47,7 +47,7 @@ consegue repointar IP — e é revogável. O próprio Dynu recomenda:
 
    Convenção do projeto: **`kubeforge-<suas-iniciais>.ddnsgeek.com`** — ex.:
    `kubeforge-mwl.ddnsgeek.com`. `ddnsgeek.com` é um dos domínios grátis do Dynu (está na
-   Public Suffix List, o que viabiliza o Let's Encrypt — ver LAB 03).
+   Public Suffix List, o que viabiliza o Let's Encrypt — ver LAB 02).
 3. Clique **+ Add**. O hostname existe agora (aponta pro seu IP atual — será sobrescrito
    pelo server quando o lab subir; isso é esperado).
 

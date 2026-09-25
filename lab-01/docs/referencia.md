@@ -173,5 +173,5 @@ isso é transparente:
 - k3s ativo, `kubectl get nodes` → N nós **Ready**, `ARCH=arm64`.
 - Base pronta para os labs 03+ (agnósticos de provedor a partir daqui).
 
-Com o cluster k3s de pé, o **LAB 03** (primeiro workload) roda igual em k3s ou OKE — os
-manifests são padrão Kubernetes. A escolha de provedor (Opção A/B) só afeta os labs 01-02.
+Com o cluster k3s de pé, o **LAB 02** (primeiro workload) roda igual em k3s ou OKE — os
+manifests são padrão Kubernetes. Os labs a partir daqui independem do provedor de fundação.

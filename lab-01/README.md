@@ -1,6 +1,6 @@
 # LAB 01 — AWS Academy + k3s multi-node (ARM64)
 
-> ✅ **Opção A (ativa).** Primeiro laboratório da trilha [KubeForge](../../README.md).
+> ✅ Primeiro laboratório da trilha [KubeForge](../README.md).
 > Sobe um cluster **k3s multi-node** (1 server + N agents) sobre EC2 **Graviton (ARM64)**
 > no **AWS Academy Learner Lab**, provisionadas por **Terraform**.
 >
@@ -40,12 +40,12 @@ Detalhe do porquê em [docs/referencia.md](docs/referencia.md#papéis-dos-nós-k
 - Gere a **IP Update Password** (não a senha da conta).
 
 > Por que obrigatório: o IP público muda a cada sessão de 4h; sem o hostname estável você
-> refaria o kubeconfig toda vez, e o TLS do LAB 03 depende dele. O `terraform apply` **falha**
+> refaria o kubeconfig toda vez, e o TLS do LAB 02 depende dele. O `terraform apply` **falha**
 > (precondition) se `owner_initials`/`dynu_password` estiverem vazios.
 
 **3. Preparar o Terraform** (com os valores do Dynu do passo 2 em mãos):
 ```bash
-cd lab-01/aws/terraform
+cd lab-01/terraform
 cp example.tfvars terraform.tfvars
 # edite terraform.tfvars:
 #   my_ip_cidr     = "$(curl -s https://checkip.amazonaws.com)/32"
@@ -73,7 +73,7 @@ kubectl get nodes -o wide   # N nós Ready, ARCH=arm64
 ## 4. Resultado esperado
 
 N EC2 Graviton (ARM64), k3s ativo, `kubectl get nodes` → N nós **Ready** com `ARCH=arm64`.
-Base pronta para o **LAB 03** (primeiro workload, agnóstico de provedor).
+Base pronta para o **LAB 02** (primeiro workload, agnóstico de provedor).
 
 ---
 

@@ -1,8 +1,8 @@
-# LAB 03 — Certificado digital TLS (cert-manager + Let's Encrypt)
+# LAB 02 — Certificado digital TLS (cert-manager + Let's Encrypt)
 
 > Emite um **certificado TLS válido e auto-renovável** para um app exposto no
 > cluster, usando **cert-manager** + **Let's Encrypt** (desafio ACME HTTP-01),
-> pelo hostname DDNS do [LAB 01](../lab-01/aws/README.md)
+> pelo hostname DDNS do [LAB 01](../lab-01/README.md)
 > (`kubeforge-<iniciais>.ddnsgeek.com`).
 >
 > Provedor-agnóstico: roda igual em k3s ou em qualquer Kubernetes gerenciado. Os comandos
@@ -44,7 +44,7 @@ com os outros usuários do `ddnsgeek.com`. Por isso a emissão funciona.
 ## 4. Instalar o cert-manager
 
 ```bash
-cd lab-03
+cd lab-02
 ./scripts/install-cert-manager.sh
 ```
 O script aplica os CRDs + controlador e espera os 3 pods (`cert-manager`,

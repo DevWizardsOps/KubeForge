@@ -29,7 +29,7 @@ não substitui os READMEs — ela aponta pra eles e adiciona a didática.
   preferem `arm64`.
 - **Por quê k3s (não EKS):** k3s roda o control-plane dentro da EC2 (sem custo de
   control plane, sem IAM travado do EKS). É Kubernetes conformante.
-- **Do LAB 03 em diante** tudo é Kubernetes padrão — agnóstico de provedor.
+- **Do LAB 02 em diante** tudo é Kubernetes padrão — agnóstico de provedor.
 
 ## Como ensinar (método)
 
@@ -59,8 +59,8 @@ Para QUALQUER lab, siga esta ordem — é o que faz o conceito "colar":
 
 | Lab | Tema | README | Guia de ensino |
 |-----|------|--------|----------------|
-| 01 | AWS Academy + k3s ARM64 | `~/git/KubeForge/lab-01/aws/README.md` | `references/lab-01-aws.md` |
-| 03 | Certificado TLS (cert-manager + Let's Encrypt) | `~/git/KubeForge/lab-03/README.md` | `references/lab-03-tls.md` |
+| 01 | AWS Academy + k3s ARM64 | `~/git/KubeForge/lab-01/README.md` | `references/lab-01-aws.md` |
+| 03 | Certificado TLS (cert-manager + Let's Encrypt) | `~/git/KubeForge/lab-02/README.md` | `references/lab-02-tls.md` |
 
 > Esta tabela cresce conforme novos labs são feitos. Ao concluir um lab novo,
 > adicione a linha aqui E crie o `references/lab-NN-*.md` correspondente.
@@ -78,5 +78,5 @@ Mantenha o `SKILL.md` enxuto (o método); o conteúdo que cresce vai em `referen
 ## Referências
 
 - Conceitos e roteiro do LAB 01: [references/lab-01-aws.md](references/lab-01-aws.md)
-- Conceitos e roteiro do LAB 03: [references/lab-03-tls.md](references/lab-03-tls.md)
+- Conceitos e roteiro do LAB 02: [references/lab-02-tls.md](references/lab-02-tls.md)
 - Erros comuns e diagnóstico: [references/gotchas.md](references/gotchas.md)

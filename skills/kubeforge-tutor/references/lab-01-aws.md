@@ -1,6 +1,6 @@
 # Guia de ensino — LAB 01: AWS Academy + k3s ARM64
 
-README do lab: `~/git/KubeForge/lab-01/aws/README.md`
+README do lab: `~/git/KubeForge/lab-01/README.md`
 
 ## O problema que este lab resolve
 
@@ -45,7 +45,7 @@ VPC própria ── subnet pública ── IGW        (SEM NAT/ELB: eles cobram 
 ## Roteiro de ensino (passos)
 
 1. Ativar o Learner Lab (Canvas → Start Lab → verde → console). Prints em
-   `~/git/KubeForge/lab-01/aws/docs/account-setup/`.
+   `~/git/KubeForge/lab-01/docs/account-setup/`.
 2. Pegar credenciais (AWS Details → AWS CLI: Show) → `~/.aws/credentials`.
 3. Confirmar a SCP com `run-instances --dry-run` (o `DryRunOperation` é o "pode").
 4. `terraform.tfvars`: `my_ip_cidr`, `owner_initials`, `dynu_password`.

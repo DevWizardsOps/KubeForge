@@ -32,8 +32,8 @@ my_ip_cidr = "SEU.IP.PUBLICO.AQUI/32"
 vpc_cidr           = "10.0.0.0/16"
 public_subnet_cidr = "10.0.1.0/24"
 
-# LAB 03 (TLS/Ingress): abre 80/443 ao público para o Ingress e o desafio
-# ACME HTTP-01 do Let's Encrypt. Deixe false até chegar no LAB 03.
+# LAB 02 (TLS/Ingress): abre 80/443 ao público para o Ingress e o desafio
+# ACME HTTP-01 do Let's Encrypt. Deixe false até chegar no LAB 02.
 expose_web = false
 
 # --- Dynu DDNS (OBRIGATÓRIO — o apply falha sem estes valores) --------------
