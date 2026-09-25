@@ -1,0 +1,62 @@
+variable "region" {
+  description = "Região AWS (Learner Lab: só us-east-1 ou us-west-2)."
+  type        = string
+  default     = "us-east-1"
+}
+
+variable "aws_profile" {
+  description = "Perfil do AWS CLI com a credencial do Learner Lab (ex.: kubeforge). Vazio usa o default/AWS_PROFILE."
+  type        = string
+  default     = "kubeforge"
+}
+
+variable "instance_type" {
+  description = "Tipo EC2 (ARM64/Graviton). t4g.large = 2 vCPU / 8 GB — confirmado liberado pela SCP via dry-run."
+  type        = string
+  default     = "t4g.large"
+}
+
+variable "agent_count" {
+  description = "Número de nós agent (workers) além do server. 1 = cluster de 2 nós; 2 = cluster de 3 nós."
+  type        = number
+  default     = 2
+
+  validation {
+    condition     = var.agent_count >= 0 && var.agent_count <= 4
+    error_message = "agent_count deve ficar entre 0 e 4 (teto de 32 vCPU do Learner Lab; cada t4g.large = 2 vCPU)."
+  }
+}
+
+variable "disk_gb" {
+  description = "Tamanho do disco raiz gp3 em GB (Learner Lab exige < 100)."
+  type        = number
+  default     = 30
+
+  validation {
+    condition     = var.disk_gb > 0 && var.disk_gb < 100
+    error_message = "disk_gb deve ser < 100 (limite de EBS do Learner Lab)."
+  }
+}
+
+variable "key_name" {
+  description = "Nome do key pair EC2 para SSH. No Learner Lab é 'vockey' (a PEM baixada em AWS Details)."
+  type        = string
+  default     = "vockey"
+}
+
+variable "vpc_cidr" {
+  description = "CIDR da VPC nova."
+  type        = string
+  default     = "10.0.0.0/16"
+}
+
+variable "public_subnet_cidr" {
+  description = "CIDR da subnet pública."
+  type        = string
+  default     = "10.0.1.0/24"
+}
+
+variable "my_ip_cidr" {
+  description = "Seu IP público em CIDR (ex.: 203.0.113.4/32) para liberar SSH/6443/NodePort. NUNCA use 0.0.0.0/0."
+  type        = string
+}

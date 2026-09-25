@@ -1,0 +1,32 @@
+#!/usr/bin/env bash
+# user_data do nó SERVER (control-plane) — roda no primeiro boot da EC2.
+# k3s server com token compartilhado; --tls-san garante o cert válido para o
+# IP público (Elastic IP) resolvido depois pelo Terraform via DNS/metadata.
+set -euo pipefail
+exec > /var/log/kubeforge-bootstrap.log 2>&1
+
+echo "==> KubeForge k3s SERVER bootstrap $(date -u)"
+
+# IP público atual da instância (via IMDSv2), para o --tls-san.
+TOKEN="$(curl -s -X PUT 'http://169.254.169.254/latest/api/token' \
+  -H 'X-aws-ec2-metadata-token-ttl-seconds: 300')"
+PUBIP="$(curl -s -H "X-aws-ec2-metadata-token: $TOKEN" \
+  http://169.254.169.254/latest/meta-data/public-ipv4 || true)"
+
+# Idempotência pós-reset de 4h.
+if command -v k3s >/dev/null 2>&1 && systemctl is-active --quiet k3s 2>/dev/null; then
+  echo "==> k3s server já ativo — nada a fazer."
+else
+  echo "==> Instalando k3s server…"
+  curl -sfL https://get.k3s.io | \
+    K3S_TOKEN='${k3s_token}' \
+    INSTALL_K3S_EXEC="server --write-kubeconfig-mode 644 --tls-san $PUBIP" \
+    sh -
+fi
+
+# kubeconfig legível para o usuário ubuntu.
+mkdir -p /home/ubuntu/.kube
+cp /etc/rancher/k3s/k3s.yaml /home/ubuntu/.kube/config
+chown -R ubuntu:ubuntu /home/ubuntu/.kube
+
+echo "==> SERVER pronto $(date -u)"

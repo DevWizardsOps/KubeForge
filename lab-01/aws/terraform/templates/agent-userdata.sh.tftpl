@@ -1,0 +1,33 @@
+#!/usr/bin/env bash
+# user_data do nó AGENT (worker) — roda no primeiro boot da EC2.
+# Faz join no server pelo IP PRIVADO (estável dentro da VPC, sobrevive ao
+# reset de 4h). Espera o API do server responder antes de instalar.
+set -euo pipefail
+exec > /var/log/kubeforge-bootstrap.log 2>&1
+
+echo "==> KubeForge k3s AGENT bootstrap $(date -u)"
+
+# Idempotência pós-reset de 4h.
+if command -v k3s-agent >/dev/null 2>&1 && systemctl is-active --quiet k3s-agent 2>/dev/null; then
+  echo "==> k3s agent já ativo — nada a fazer."
+  exit 0
+fi
+
+# Espera o server ficar acessível (até ~5 min).
+echo "==> Aguardando o server ${server_url}…"
+for i in $(seq 1 60); do
+  if curl -sk --connect-timeout 3 "${server_url}/ping" >/dev/null 2>&1 \
+     || curl -sk --connect-timeout 3 "${server_url}" >/dev/null 2>&1; then
+    echo "==> Server respondeu (tentativa $i)."
+    break
+  fi
+  sleep 5
+done
+
+echo "==> Instalando k3s agent (join em ${server_url})…"
+curl -sfL https://get.k3s.io | \
+  K3S_URL='${server_url}' \
+  K3S_TOKEN='${k3s_token}' \
+  sh -
+
+echo "==> AGENT pronto $(date -u)"
