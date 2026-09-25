@@ -6,7 +6,7 @@
 #
 # ⚠️ TROQUE:
 #   - kubeforge-mwl.ddnsgeek.com pelo SEU hostname (o mesmo do DDNS do LAB 01).
-#   - Comece com 'letsencrypt-staging'. Só troque para 'letsencrypt-prod' depois
+#   - Comece com 'letsencrypt-prod'. Só troque para 'letsencrypt-prod' depois
 #     que o staging emitir com sucesso (READY=True no 'kubectl get certificate').
 ---
 apiVersion: networking.k8s.io/v1
@@ -14,7 +14,7 @@ kind: Ingress
 metadata:
   name: whoami
   annotations:
-    cert-manager.io/cluster-issuer: letsencrypt-staging   # <-- staging primeiro
+    cert-manager.io/cluster-issuer: letsencrypt-prod   # prod (validado após o staging)
 spec:
   ingressClassName: traefik
   tls:

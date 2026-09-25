@@ -113,8 +113,9 @@ Só depois que o staging deu READY=True:
 
 > ✅ **Validado end-to-end (25/09/2026) num Learner Lab real:** o HTTP-01 **funciona** —
 > a borda do Learner Lab deixa 80/443 públicas passarem quando o security group as abre.
-> `whoami-tls` chegou a `READY=True` e `curl http://<hostname>` respondeu `HTTP 200`.
-> A emissão do Let's Encrypt não é bloqueada pelo ambiente.
+> Fluxo completo confirmado: staging → `READY=True`, promoção para **prod** → cert Let's
+> Encrypt confiável (cadeado verde, `curl https://` sem `-k`). A emissão não é bloqueada
+> pelo ambiente.
 
 | Sintoma | Causa | Ação |
 |---|---|---|
@@ -142,4 +143,4 @@ Se quiser fechar 80/443 de novo: `expose_web = false` + `terraform apply` no LAB
 
 ---
 
-**ARM64:** cert-manager e whoami são multi-arch (rodam em Graviton) · **Custo:** zero (Let's Encrypt é grátis) · **Status:** ✅ validado end-to-end no Learner Lab (HTTP-01, cert staging emitido, HTTP 200)
+**ARM64:** cert-manager e whoami são multi-arch (rodam em Graviton) · **Custo:** zero (Let's Encrypt é grátis) · **Status:** ✅ validado end-to-end no Learner Lab — cert **PROD** emitido (issuer Let's Encrypt, cadeado verde no browser, HTTPS sem `-k`)
