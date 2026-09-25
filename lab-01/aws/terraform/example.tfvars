@@ -32,6 +32,10 @@ my_ip_cidr = "SEU.IP.PUBLICO.AQUI/32"
 vpc_cidr           = "10.0.0.0/16"
 public_subnet_cidr = "10.0.1.0/24"
 
+# LAB 03 (TLS/Ingress): abre 80/443 ao público para o Ingress e o desafio
+# ACME HTTP-01 do Let's Encrypt. Deixe false até chegar no LAB 03.
+expose_web = false
+
 # --- Dynu DDNS (opcional, mas recomendado para o reset de 4h) ---------------
 # O server atualiza um hostname DDNS sozinho no boot e a cada 5 min. Assim o
 # kubeconfig usa https://<hostname>:6443 e você NÃO troca o IP toda sessão.

@@ -164,6 +164,20 @@ resource "aws_security_group" "k3s" {
     cidr_blocks = [var.my_ip_cidr]
   }
 
+  # HTTP/HTTPS — PÚBLICO (0.0.0.0/0) quando expose_web=true. Necessário para o
+  # desafio ACME HTTP-01 do Let's Encrypt (LAB 03): o LE valida acessando
+  # http://<hostname>/.well-known/acme-challenge/... a partir da internet.
+  dynamic "ingress" {
+    for_each = var.expose_web ? [80, 443] : []
+    content {
+      description = "Web (HTTP/HTTPS) público — ACME HTTP-01 / Ingress"
+      from_port   = ingress.value
+      to_port     = ingress.value
+      protocol    = "tcp"
+      cidr_blocks = ["0.0.0.0/0"]
+    }
+  }
+
   egress {
     description = "all outbound"
     from_port   = 0

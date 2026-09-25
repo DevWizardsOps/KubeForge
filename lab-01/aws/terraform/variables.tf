@@ -61,6 +61,12 @@ variable "my_ip_cidr" {
   type        = string
 }
 
+variable "expose_web" {
+  description = "Abre 80/443 ao público (0.0.0.0/0) para o Ingress e o desafio ACME HTTP-01 do Let's Encrypt (LAB 03). false mantém o cluster fechado ao seu IP."
+  type        = bool
+  default     = false
+}
+
 # --- Dynu DDNS (atualização automática do IP do server) --------------------
 # O server instala um systemd timer que reporta o IP público ao Dynu no boot e
 # a cada 5 min (IP Update Protocol). O hostname é adicionado ao --tls-san do
