@@ -45,6 +45,16 @@ lab-03+/   Kubernetes padrão (agnóstico de provedor)
 ➡️ **[LAB 03 — Certificado TLS (cert-manager + Let's Encrypt)](lab-03/README.md)** — HTTPS
 válido no hostname DDNS, provedor-agnóstico.
 
+## Tutor da trilha (skill)
+
+O repo inclui uma **skill de ensino** em [`skills/kubeforge-tutor/`](skills/kubeforge-tutor/SKILL.md)
+— ajuda quem faz os labs a entender cada conceito e quem ensina a conduzir (método, guias por
+lab, perguntas de checagem, e um `gotchas.md` com os erros reais). Para usá-la como skill viva
+no Kiro Crew, faça um symlink dela em `~/.kiro/skills/`:
+```bash
+ln -s "$(pwd)/skills/kubeforge-tutor" ~/.kiro/skills/kubeforge-tutor
+```
+
 ## Convenções
 
 - **ARM64 first** — imagens e charts preferem `arm64`; o material assume esse alvo.
