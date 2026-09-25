@@ -75,6 +75,12 @@ kubectl get nodes -o wide   # N nós Ready, ARCH=arm64
 N EC2 Graviton (ARM64), k3s ativo, `kubectl get nodes` → N nós **Ready** com `ARCH=arm64`.
 Base pronta para o **LAB 02** (primeiro workload, agnóstico de provedor).
 
+**Validar automaticamente:**
+```bash
+export KUBECONFIG=~/.kube/config-kubeforge
+./tests/verify.sh    # ✅ nós Ready + arm64 + endpoint via hostname DDNS
+```
+
 ---
 
 ## 📘 Documentação (o "porquê" e o detalhe)

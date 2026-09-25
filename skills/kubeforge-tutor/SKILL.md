@@ -43,7 +43,9 @@ Para QUALQUER lab, siga esta ordem — é o que faz o conceito "colar":
 3. **Um comando por vez, com o "por quê".** Cada `kubectl`/`terraform` vem com
    uma linha do que faz e o que esperar de saída.
 4. **Prove que funcionou.** Todo lab termina num teste observável (`kubectl get
-   nodes` Ready, `curl` HTTP 200, cadeado verde). Sem prova, não terminou.
+   nodes` Ready, `curl` HTTP 200, cadeado verde). Cada lab tem um
+   **`tests/verify.sh`** que checa isso automaticamente (✅/❌ por item) — rode-o
+   ao fim como prova objetiva. Sem prova, não terminou.
 5. **Quebre de propósito** (para instrutor): mostre o erro comum e como
    diagnosticar — é onde o aprendizado real acontece (ver `references/gotchas.md`).
 

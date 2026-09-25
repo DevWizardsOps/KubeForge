@@ -109,6 +109,17 @@ Só depois que o staging deu READY=True:
 - `https://kubeforge-<iniciais>.ddnsgeek.com` com cert Let's Encrypt válido.
 - Renovação automática (cert-manager renova ~30 dias antes de expirar).
 
+## 9. Validar automaticamente
+
+```bash
+export KUBECONFIG=~/.kube/config-kubeforge
+./tests/verify.sh
+```
+Checa: cert-manager instalado, os dois ClusterIssuers Ready, `whoami-tls` READY=True, o
+Ingress apontando para **prod**, o cert emitido pela **Let's Encrypt (não STAGING)** e o
+**HTTPS respondendo 200 sem `-k`**. O host é lido do próprio Ingress — não precisa editar
+o script. 🎉 se tudo passar; senão lista o que falta.
+
 ## 9. Troubleshooting
 
 > ✅ **Validado end-to-end (25/09/2026) num Learner Lab real:** o HTTP-01 **funciona** —

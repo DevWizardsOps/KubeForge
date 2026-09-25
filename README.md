@@ -29,6 +29,21 @@ skills/       Skill-tutor da trilha (ensino)
 ➡️ **[LAB 02 — Certificado TLS (cert-manager + Let's Encrypt)](lab-02/README.md)** — HTTPS
 válido no hostname DDNS, provedor-agnóstico.
 
+## Validação dos labs (check scripts)
+
+Cada lab traz um **`tests/verify.sh`** que checa o estado real do cluster e diz na hora
+se o desafio foi resolvido — ✅ por item, ou ❌ com o que faltou. É o mesmo papel do
+*check script* de plataformas como Instruqt/Killercoda, mas **versionado no repo e custo
+zero**, rodando contra o seu próprio k3s:
+
+```bash
+export KUBECONFIG=~/.kube/config-kubeforge
+cd lab-01 && ./tests/verify.sh    # 🎉 se tudo passar; exit 1 listando o que falta
+```
+
+Os helpers ficam em [`.ci/verify-lib.sh`](.ci/verify-lib.sh) (`check`, `check_eq`,
+`check_contains`, `summary`). Um lab novo só escreve os checks específicos.
+
 ## Tutor da trilha (skill)
 
 O repo inclui uma **skill de ensino** em [`skills/kubeforge-tutor/`](skills/kubeforge-tutor/SKILL.md)
