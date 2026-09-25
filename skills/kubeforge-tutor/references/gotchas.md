@@ -36,6 +36,15 @@ cura**. É o material mais valioso pra ensinar (o erro é onde se aprende).
 4. **Forçar retry** do ACME sem esperar backoff: `kubectl delete challenge --all;
    kubectl delete certificaterequest --all`.
 
+## LAB 03 — Helm
+
+| Sintoma | Causa | Cura |
+|---|---|---|
+| `INSTALLATION FAILED: ... invalid ownership metadata; missing key "app.kubernetes.io/managed-by": must be set to "Helm"` | o objeto (Service/Deployment/Ingress `whoami`) **já existe** — foi aplicado à mão via `kubectl apply` no LAB 02 — e o Helm se recusa a adotar o que não criou | **(A, limpa)** `kubectl delete -f lab-02/manifests/02-whoami-app.yaml -f lab-02/manifests/03-whoami-ingress.yaml` e reinstale. **(B, adota)** marque os objetos: `kubectl label <obj> app.kubernetes.io/managed-by=Helm --overwrite` + `kubectl annotate <obj> meta.helm.sh/release-name=whoami meta.helm.sh/release-namespace=default --overwrite` |
+| `helm upgrade` "esquece" o valor que setei | `--set` não é persistido entre comandos | repasse o `--set`, use `-f values.yaml`, ou `--reuse-values` |
+| cert não emite após o helm install | esqueceu `--set ingress.host=<seu>` → Ingress ficou com o host default `kubeforge-mwl` | reinstale/atualize passando o SEU host |
+| `Error: release: not found` no rollback | nome do release errado (confundiu com nome do chart) | `helm list` para achar o release; `helm install <release> <chart>` |
+
 ## Gerais (KiroCrew / git)
 
 | Sintoma | Causa | Cura |

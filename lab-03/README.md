@@ -61,6 +61,15 @@ helm template whoami charts/whoami         # imprime os manifests renderizados
 
 ## 6. Instalar o release
 
+> ⚠️ **Se você fez o LAB 02 aplicando os manifests com `kubectl apply`:** o Deployment,
+> Service e Ingress **`whoami`** já existem no cluster sem os metadados do Helm. O
+> `helm install` se recusa a adotá-los (`invalid ownership metadata`). **Limpe antes:**
+> ```bash
+> kubectl delete -f lab-02/manifests/02-whoami-app.yaml
+> kubectl delete -f lab-02/manifests/03-whoami-ingress.yaml
+> ```
+> O cert-manager e os ClusterIssuers ficam — o chart reusa o `letsencrypt-prod`.
+
 ```bash
 export KUBECONFIG=~/.kube/config-kubeforge
 # TROQUE o host pelo SEU (o do DDNS do LAB 01):
