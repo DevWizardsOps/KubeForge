@@ -63,6 +63,14 @@ data "aws_ami" "ubuntu_arm64" {
 # instância x86 sem querer (a premissa do projeto é ARM64).
 locals {
   is_arm = can(regex("^(t4g|m6g|c6g|r6g|m7g|c7g|r7g)\\.", var.instance_type))
+
+  # Hostname DDNS efetivo: override explícito ganha; senão compõe das iniciais;
+  # senão vazio (DDNS desligado).
+  dynu_hostname = (
+    var.dynu_hostname != "" ? var.dynu_hostname :
+    var.owner_initials != "" ? "kubeforge-${var.owner_initials}.${var.dynu_domain}" :
+    ""
+  )
 }
 
 resource "terraform_data" "arch_guard" {
@@ -195,7 +203,7 @@ resource "aws_instance" "server" {
 
   user_data = templatefile("${path.module}/templates/server-userdata.sh.tftpl", {
     k3s_token     = random_password.k3s_token.result
-    dynu_hostname = var.dynu_hostname
+    dynu_hostname = local.dynu_hostname
     dynu_password = var.dynu_password
   })
 

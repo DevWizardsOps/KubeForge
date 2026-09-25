@@ -62,18 +62,39 @@ variable "my_ip_cidr" {
 }
 
 # --- Dynu DDNS (atualização automática do IP do server) --------------------
-# Quando dynu_hostname != "", o server instala um systemd timer que reporta o
-# IP público ao Dynu no boot e a cada 5 min (IP Update Protocol). O hostname é
-# adicionado ao --tls-san do k3s, então o cert já nasce válido para o nome e o
-# kubeconfig usa https://<hostname>:6443 (nunca mais 'sed' de IP entre sessões).
+# O server instala um systemd timer que reporta o IP público ao Dynu no boot e
+# a cada 5 min (IP Update Protocol). O hostname é adicionado ao --tls-san do
+# k3s, então o cert nasce válido para o nome e o kubeconfig usa
+# https://<hostname>:6443 (nunca mais 'sed' de IP entre sessões).
+#
+# CAMINHO FÁCIL: preencha owner_initials (ex.: "mwl") e o hostname é montado
+# como kubeforge-<owner_initials>.<dynu_domain>. Deixe owner_initials vazio ("")
+# para desligar o DDNS por completo.
+variable "owner_initials" {
+  description = "Suas iniciais para compor o hostname DDNS (ex.: 'mwl' -> kubeforge-mwl.ddnsgeek.com). Vazio desliga o DDNS. O hostname resultante deve já existir no Dynu."
+  type        = string
+  default     = ""
+
+  validation {
+    condition     = var.owner_initials == "" || can(regex("^[a-z0-9-]{1,20}$", var.owner_initials))
+    error_message = "owner_initials deve conter só letras minúsculas, dígitos ou hífen (1-20 chars), ou ficar vazio."
+  }
+}
+
+variable "dynu_domain" {
+  description = "Domínio DDNS base (o que você tem no Dynu). Compõe kubeforge-<owner_initials>.<dynu_domain>."
+  type        = string
+  default     = "ddnsgeek.com"
+}
+
 variable "dynu_hostname" {
-  description = "Hostname Dynu a atualizar (ex.: kubeforge-mwl.ddnsgeek.com). Vazio desliga o DDNS. O hostname deve já existir no Dynu."
+  description = "OVERRIDE opcional do hostname completo. Se preenchido, ganha de owner_initials/dynu_domain. Use só se o padrão kubeforge-<iniciais>.<domínio> não servir."
   type        = string
   default     = ""
 }
 
 variable "dynu_password" {
-  description = "IP Update Password do Dynu (Control Panel > IP Update Password), NÃO a senha da conta. Guardada como SSM SecureString; nunca vai ao user_data em texto. Ponha no terraform.tfvars (gitignored)."
+  description = "IP Update Password do Dynu (Control Panel > seu hostname > IP Update Password), NÃO a senha da conta. Vai ao user_data (legível na console EC2) — por isso use a senha DEDICADA e revogável. Ponha no terraform.tfvars (gitignored)."
   type        = string
   default     = ""
   sensitive   = true

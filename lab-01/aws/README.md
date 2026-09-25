@@ -143,11 +143,16 @@ REST API v2 (que exigiria token OAuth + listar zona + achar o record id).
    `kubeforge-<iniciais>.ddnsgeek.com` — ex.: `kubeforge-mwl.ddnsgeek.com` (Marcelo Wanderley Lima).
 2. **Pegue a IP Update Password** no Dynu — Control Panel → seu hostname → **IP Update Password**.
    ⚠️ Use ESSA senha dedicada, **não a senha da conta**.
-3. **Preencha o `terraform.tfvars`:**
+3. **Preencha o `terraform.tfvars`** (caminho fácil — só as iniciais):
    ```hcl
-   dynu_hostname = "kubeforge-mwl.ddnsgeek.com"
-   dynu_password = "<sua IP Update Password>"
+   owner_initials = "mwl"            # -> monta kubeforge-mwl.ddnsgeek.com
+   dynu_domain    = "ddnsgeek.com"   # troque se usa outro domínio no Dynu
+   dynu_password  = "<sua IP Update Password>"
+   # (opcional) override do hostname completo, se o padrão não servir:
+   # dynu_hostname = "meu-nome-custom.exemplo.com"
    ```
+   O Terraform compõe `kubeforge-<owner_initials>.<dynu_domain>`. Se preferir um nome fora
+   do padrão, preencha `dynu_hostname` (ele ganha das iniciais). `owner_initials = ""` desliga o DDNS.
 4. `terraform apply` — o server instala o `systemd timer` (`kubeforge-dynu.timer`) e reporta o
    IP no boot. Verifique com:
    ```bash

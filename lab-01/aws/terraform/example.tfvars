@@ -33,11 +33,18 @@ vpc_cidr           = "10.0.0.0/16"
 public_subnet_cidr = "10.0.1.0/24"
 
 # --- Dynu DDNS (opcional, mas recomendado para o reset de 4h) ---------------
-# O server atualiza este hostname sozinho no boot e a cada 5 min. Assim o
-# kubeconfig usa https://<hostname>:6443 e você NÃO precisa trocar o IP toda sessão.
-# O hostname precisa JÁ EXISTIR no Dynu (crie o A record antes).
-# Deixe dynu_hostname vazio ("") para desligar o DDNS.
-dynu_hostname = "kubeforge-mwl.ddnsgeek.com"
+# O server atualiza um hostname DDNS sozinho no boot e a cada 5 min. Assim o
+# kubeconfig usa https://<hostname>:6443 e você NÃO troca o IP toda sessão.
+#
+# CAMINHO FÁCIL: só ponha suas INICIAIS. O hostname vira kubeforge-<iniciais>.<domínio>.
+# O hostname resultante precisa JÁ EXISTIR no Dynu (crie o A record antes).
+# Deixe owner_initials vazio ("") para desligar o DDNS.
+owner_initials = "mwl"            # -> kubeforge-mwl.ddnsgeek.com
+dynu_domain    = "ddnsgeek.com"   # troque se você usa outro domínio no Dynu
+
+# OVERRIDE opcional: se quiser um hostname completo fora do padrão acima,
+# preencha dynu_hostname (ganha das iniciais). Deixe vazio para usar o padrão.
+# dynu_hostname = "meu-nome-custom.exemplo.com"
 
 # IP Update Password do Dynu — Control Panel > (seu hostname) > IP Update Password.
 # NÃO é a senha da conta: é uma senha DEDICADA a updates de IP, revogável.

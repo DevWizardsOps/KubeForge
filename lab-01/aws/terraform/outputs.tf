@@ -25,14 +25,14 @@ output "ssh_server" {
 
 output "cluster_endpoint" {
   description = "Endpoint do k3s API — hostname Dynu se configurado, senão o IP público."
-  value       = var.dynu_hostname != "" ? "https://${var.dynu_hostname}:6443" : "https://${aws_eip.server.public_ip}:6443"
+  value       = local.dynu_hostname != "" ? "https://${local.dynu_hostname}:6443" : "https://${aws_eip.server.public_ip}:6443"
 }
 
 locals {
   _howto_ddns = <<-EOT
-    # DDNS ativo (${var.dynu_hostname}) — endpoint estável, sem 'sed' de IP entre sessões:
+    # DDNS ativo (${local.dynu_hostname}) — endpoint estável, sem 'sed' de IP entre sessões:
     scp -i vockey.pem ubuntu@${aws_eip.server.public_ip}:~/.kube/config ~/.kube/config-kubeforge
-    sed -i '' 's#https://127.0.0.1:6443#https://${var.dynu_hostname}:6443#' ~/.kube/config-kubeforge
+    sed -i '' 's#https://127.0.0.1:6443#https://${local.dynu_hostname}:6443#' ~/.kube/config-kubeforge
     export KUBECONFIG=~/.kube/config-kubeforge
     kubectl get nodes -o wide   # ${1 + var.agent_count} nós Ready, ARCH=arm64
     # Nas próximas sessões o IP muda mas o hostname NÃO — reuse o mesmo kubeconfig.
@@ -49,5 +49,5 @@ locals {
 
 output "kubeconfig_howto" {
   description = "Como pegar o kubeconfig no seu Mac (rode após o cluster subir)."
-  value       = var.dynu_hostname != "" ? local._howto_ddns : local._howto_ip
+  value       = local.dynu_hostname != "" ? local._howto_ddns : local._howto_ip
 }
