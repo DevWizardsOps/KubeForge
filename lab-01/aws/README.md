@@ -93,13 +93,22 @@ cada sessão, o Learner Lab **para** as EC2 automaticamente (não deleta). Só r
    terraform plan  -var-file=terraform.tfvars
    terraform apply -var-file=terraform.tfvars
    ```
-3. **Pegar o kubeconfig** (o `apply` imprime o passo a passo em `kubeconfig_howto`):
+3. **Pegar o kubeconfig.** O `apply` já imprime os comandos prontos com os valores certos
+   — basta copiar do output:
    ```bash
+   terraform output -raw kubeconfig_howto
+   ```
+   Com o **DDNS ativo** (seção 7), o `sed` usa o **hostname** (não o IP), então o kubeconfig
+   fica estável entre sessões — você reusa o mesmo, sem refazer nada quando o IP muda:
+   ```bash
+   # o scp usa o IP/host do server (SSH); o endpoint do kubeconfig usa o HOSTNAME:
    scp -i vockey.pem ubuntu@<server_public_ip>:~/.kube/config ~/.kube/config-kubeforge
-   sed -i '' 's#https://127.0.0.1:6443#https://<server_public_ip>:6443#' ~/.kube/config-kubeforge
+   sed -i '' 's#https://127.0.0.1:6443#https://kubeforge-<iniciais>.ddnsgeek.com:6443#' ~/.kube/config-kubeforge
    export KUBECONFIG=~/.kube/config-kubeforge
    kubectl get nodes -o wide   # N nós Ready, ARCH=arm64
    ```
+   > Sem DDNS (antes da seção 7) o `sed` usaria `<server_public_ip>` — mas aí você teria que
+   > refazer a cada sessão. Configure o DDNS (seção 7) e use o hostname.
 
 ## 6. Como o cluster se monta (user_data)
 
