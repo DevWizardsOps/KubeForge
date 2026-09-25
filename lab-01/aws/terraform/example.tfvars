@@ -36,13 +36,13 @@ public_subnet_cidr = "10.0.1.0/24"
 # ACME HTTP-01 do Let's Encrypt. Deixe false até chegar no LAB 03.
 expose_web = false
 
-# --- Dynu DDNS (opcional, mas recomendado para o reset de 4h) ---------------
-# O server atualiza um hostname DDNS sozinho no boot e a cada 5 min. Assim o
+# --- Dynu DDNS (OBRIGATÓRIO — o apply falha sem estes valores) --------------
+# O server atualiza um hostname DDNS sozinho no boot e a cada 15 min. Assim o
 # kubeconfig usa https://<hostname>:6443 e você NÃO troca o IP toda sessão.
 #
 # CAMINHO FÁCIL: só ponha suas INICIAIS. O hostname vira kubeforge-<iniciais>.<domínio>.
-# O hostname resultante precisa JÁ EXISTIR no Dynu (crie o A record antes).
-# Deixe owner_initials vazio ("") para desligar o DDNS.
+# O hostname resultante precisa JÁ EXISTIR no Dynu (crie o A record antes — ver docs/dynu-ddns).
+# owner_initials vazio E dynu_hostname vazio => terraform apply FALHA (precondition).
 owner_initials = "mwl"            # -> kubeforge-mwl.ddnsgeek.com
 dynu_domain    = "ddnsgeek.com"   # troque se você usa outro domínio no Dynu
 

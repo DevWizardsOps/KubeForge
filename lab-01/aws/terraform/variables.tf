@@ -77,13 +77,13 @@ variable "expose_web" {
 # como kubeforge-<owner_initials>.<dynu_domain>. Deixe owner_initials vazio ("")
 # para desligar o DDNS por completo.
 variable "owner_initials" {
-  description = "Suas iniciais para compor o hostname DDNS (ex.: 'mwl' -> kubeforge-mwl.ddnsgeek.com). Vazio desliga o DDNS. O hostname resultante deve já existir no Dynu."
+  description = "Suas iniciais para compor o hostname DDNS (ex.: 'mwl' -> kubeforge-mwl.ddnsgeek.com). OBRIGATÓRIO: o apply falha (precondition) se vazio e sem dynu_hostname. O hostname deve já existir no Dynu."
   type        = string
   default     = ""
 
   validation {
     condition     = var.owner_initials == "" || can(regex("^[a-z0-9-]{1,20}$", var.owner_initials))
-    error_message = "owner_initials deve conter só letras minúsculas, dígitos ou hífen (1-20 chars), ou ficar vazio."
+    error_message = "owner_initials deve conter só letras minúsculas, dígitos ou hífen (1-20 chars), ou ficar vazio (mas aí defina dynu_hostname)."
   }
 }
 

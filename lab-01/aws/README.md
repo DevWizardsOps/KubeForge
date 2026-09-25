@@ -84,14 +84,15 @@ cada sessão, o Learner Lab **para** as EC2 automaticamente (não deleta). Só r
    - **AWS Details → AWS CLI: Show** → cole o bloco `[default]` no seu `~/.aws/credentials`
      (renomeie o profile para `kubeforge`, ou ajuste `aws_profile` no tfvars).
    - **AWS Details → Download PEM** → salve como `vockey.pem` (chmod 400).
-2. **Configurar o DDNS Dynu (pré-requisito — faça ANTES do tfvars).** O hostname e a senha
-   do Dynu entram no `terraform.tfvars`, então você precisa deles em mãos antes de preencher.
-   Siga o [guia do Dynu](docs/dynu-ddns/README.md):
+2. **Configurar o DDNS Dynu (OBRIGATÓRIO — faça ANTES do tfvars).** O hostname e a senha
+   do Dynu entram no `terraform.tfvars`, e o `terraform apply` **falha** (precondition) se
+   `owner_initials`/`dynu_password` estiverem vazios. Siga o [guia do Dynu](docs/dynu-ddns/README.md):
    - Crie o hostname `kubeforge-<suas-iniciais>.ddnsgeek.com` no Dynu.
    - Gere a **IP Update Password** (não a senha da conta).
-   > Sem DDNS o cluster até sobe (deixe `owner_initials=""`), mas você teria que refazer o
-   > IP do kubeconfig a cada sessão de 4h. Por isso o DDNS é o caminho recomendado.
-3. **Preparar o Terraform** (agora com os valores do Dyno do passo 2 em mãos):
+   > Por que obrigatório: o IP público muda a cada sessão de 4h; sem o hostname estável você
+   > refaria o kubeconfig toda vez. O lab assume o DDNS como base para o kubeconfig e para o
+   > TLS do LAB 03.
+3. **Preparar o Terraform** (agora com os valores do Dynu do passo 2 em mãos):
    ```bash
    cd lab-01/aws/terraform
    cp example.tfvars terraform.tfvars
@@ -175,7 +176,8 @@ REST API v2 (que exigiria token OAuth + listar zona + achar o record id).
    # dynu_hostname = "meu-nome-custom.exemplo.com"
    ```
    O Terraform compõe `kubeforge-<owner_initials>.<dynu_domain>`. Se preferir um nome fora
-   do padrão, preencha `dynu_hostname` (ele ganha das iniciais). `owner_initials = ""` desliga o DDNS.
+   do padrão, preencha `dynu_hostname` (ele ganha das iniciais). Deixar ambos vazios faz o
+   `terraform apply` **falhar** (precondition) — o DDNS é obrigatório neste lab.
 4. `terraform apply` — o server instala o `systemd timer` (`kubeforge-dynu.timer`) e reporta o
    IP no boot. Verifique com:
    ```bash
@@ -188,8 +190,9 @@ REST API v2 (que exigiria token OAuth + listar zona + achar o record id).
 EC2** por quem tem acesso à conta. Por isso usamos a **IP Update Password dedicada e revogável**
 do Dynu (não a senha da conta): o pior caso é alguém repontar seu hostname, e você revoga a
 senha no Dynu. Não usamos SSM SecureString porque o IAM travado do Learner Lab (sem criar
-roles/instance profiles) tornaria a leitura do parâmetro pela EC2 pouco confiável. Deixe
-`dynu_hostname = ""` no tfvars para desligar o DDNS por completo.
+roles/instance profiles) tornaria a leitura do parâmetro pela EC2 pouco confiável. O DDNS é
+**obrigatório** neste lab — o `terraform apply` falha (precondition) se `owner_initials` e
+`dynu_hostname` estiverem ambos vazios.
 
 ## 8. Reset de 4 h (o que esperar)
 

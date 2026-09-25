@@ -79,6 +79,14 @@ resource "terraform_data" "arch_guard" {
       condition     = local.is_arm
       error_message = "instance_type '${var.instance_type}' não é Graviton/ARM64. A premissa do KubeForge é ARM64 (t4g/m6g/...). Se a SCP negar ARM, ajuste conscientemente."
     }
+    precondition {
+      condition     = local.dynu_hostname != ""
+      error_message = "DDNS é obrigatório neste lab: defina owner_initials (ex.: 'mwl' -> kubeforge-mwl.ddnsgeek.com) ou dynu_hostname no terraform.tfvars. Crie o hostname no Dynu antes (ver docs/dynu-ddns)."
+    }
+    precondition {
+      condition     = var.dynu_password != ""
+      error_message = "dynu_password (IP Update Password do Dynu) é obrigatório quando o DDNS está ativo. Gere-o no Dynu (Manage Credentials) e ponha no terraform.tfvars."
+    }
   }
 }
 
