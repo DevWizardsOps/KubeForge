@@ -5,7 +5,7 @@
 > pelo hostname DDNS do [LAB 01](../lab-01/aws/README.md)
 > (`kubeforge-<iniciais>.ddnsgeek.com`).
 >
-> Provedor-agnóstico: roda igual em k3s (Opção A) ou OKE (Opção B). Os comandos
+> Provedor-agnóstico: roda igual em k3s ou em qualquer Kubernetes gerenciado. Os comandos
 > abaixo assumem o cluster do LAB 01 já no ar e `kubectl` configurado.
 
 ## 1. Objetivo

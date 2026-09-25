@@ -22,8 +22,8 @@ não substitui os READMEs — ela aponta pra eles e adiciona a didática.
 
 ## Contexto da trilha (o que o aluno precisa saber primeiro)
 
-- **Provedor ativo (Opção A):** AWS Academy Learner Lab + **k3s** ARM64 em EC2
-  `t4g.large` (Graviton). Escolhido após o OCI/OKE (Opção B) bater em
+- **Provedor:** AWS Academy Learner Lab + **k3s** ARM64 em EC2
+  `t4g.large` (Graviton). Escolhido após o caminho original (OCI/OKE) bater em
   `Out of host capacity` do Ampere A1.
 - **Por quê ARM64:** é o alvo do projeto (Graviton/Ampere), imagens e charts
   preferem `arm64`.
@@ -59,9 +59,7 @@ Para QUALQUER lab, siga esta ordem — é o que faz o conceito "colar":
 
 | Lab | Tema | README | Guia de ensino |
 |-----|------|--------|----------------|
-| 01 (A) | AWS Academy + k3s ARM64 | `~/git/KubeForge/lab-01/aws/README.md` | `references/lab-01-aws.md` |
-| 01 (B) | OCI Foundation (rede) | `~/git/KubeForge/lab-01/oci/README.md` | (alternativa) |
-| 02 (B) | OKE cluster | `~/git/KubeForge/lab-02/README.md` | (alternativa) |
+| 01 | AWS Academy + k3s ARM64 | `~/git/KubeForge/lab-01/aws/README.md` | `references/lab-01-aws.md` |
 | 03 | Certificado TLS (cert-manager + Let's Encrypt) | `~/git/KubeForge/lab-03/README.md` | `references/lab-03-tls.md` |
 
 > Esta tabela cresce conforme novos labs são feitos. Ao concluir um lab novo,
