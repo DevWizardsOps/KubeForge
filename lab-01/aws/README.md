@@ -84,16 +84,26 @@ cada sessão, o Learner Lab **para** as EC2 automaticamente (não deleta). Só r
    - **AWS Details → AWS CLI: Show** → cole o bloco `[default]` no seu `~/.aws/credentials`
      (renomeie o profile para `kubeforge`, ou ajuste `aws_profile` no tfvars).
    - **AWS Details → Download PEM** → salve como `vockey.pem` (chmod 400).
-2. **Preparar o Terraform:**
+2. **Configurar o DDNS Dynu (pré-requisito — faça ANTES do tfvars).** O hostname e a senha
+   do Dynu entram no `terraform.tfvars`, então você precisa deles em mãos antes de preencher.
+   Siga o [guia do Dynu](docs/dynu-ddns/README.md):
+   - Crie o hostname `kubeforge-<suas-iniciais>.ddnsgeek.com` no Dynu.
+   - Gere a **IP Update Password** (não a senha da conta).
+   > Sem DDNS o cluster até sobe (deixe `owner_initials=""`), mas você teria que refazer o
+   > IP do kubeconfig a cada sessão de 4h. Por isso o DDNS é o caminho recomendado.
+3. **Preparar o Terraform** (agora com os valores do Dyno do passo 2 em mãos):
    ```bash
    cd lab-01/aws/terraform
    cp example.tfvars terraform.tfvars
-   # edite terraform.tfvars: my_ip_cidr = "$(curl -s https://checkip.amazonaws.com)/32"
+   # edite terraform.tfvars:
+   #   my_ip_cidr     = "$(curl -s https://checkip.amazonaws.com)/32"
+   #   owner_initials = "mwl"                       # do passo 2
+   #   dynu_password  = "<sua IP Update Password>"  # do passo 2
    terraform init
    terraform plan  -var-file=terraform.tfvars
    terraform apply -var-file=terraform.tfvars
    ```
-3. **Pegar o kubeconfig.** O `apply` já imprime os comandos prontos com os valores certos
+4. **Pegar o kubeconfig.** O `apply` já imprime os comandos prontos com os valores certos
    — basta copiar do output:
    ```bash
    terraform output -raw kubeconfig_howto

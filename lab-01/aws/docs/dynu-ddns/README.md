@@ -39,11 +39,17 @@ consegue repointar IP — e é revogável. O próprio Dynu recomenda:
 
 1. Login no [Dynu](https://www.dynu.com) → **Control Panel** → **DDNS Services** (ou
    **Dynamic DNS Service**).
-2. **Add** (ou **+ New**) um hostname. Convenção do projeto:
-   **`kubeforge-<suas-iniciais>.ddnsgeek.com`** — ex.: `kubeforge-mwl.ddnsgeek.com`.
-   - `ddnsgeek.com` é um dos domínios grátis do Dynu; escolha ele na lista.
-3. Salve. O hostname existe agora (aponta pro seu IP atual — será sobrescrito pelo
-   server quando o lab subir; isso é esperado).
+2. **Add** (ou **+ New**) um hostname. Na tela **Add Dynamic DNS** (Option 1 — Use Our
+   Domain Name), preencha **Host** com `kubeforge-<suas-iniciais>` e escolha **Top Level**
+   = `ddnsgeek.com`:
+
+   ![Dynu — Add Dynamic DNS](../images/dynu-00-add-hostname.png)
+
+   Convenção do projeto: **`kubeforge-<suas-iniciais>.ddnsgeek.com`** — ex.:
+   `kubeforge-mwl.ddnsgeek.com`. `ddnsgeek.com` é um dos domínios grátis do Dynu (está na
+   Public Suffix List, o que viabiliza o Let's Encrypt — ver LAB 03).
+3. Clique **+ Add**. O hostname existe agora (aponta pro seu IP atual — será sobrescrito
+   pelo server quando o lab subir; isso é esperado).
 
 A tela **Manage Dynamic DNS Service** do hostname fica assim (repare no IPv4 atual e no
 link **IP Update Password** no rodapé):
