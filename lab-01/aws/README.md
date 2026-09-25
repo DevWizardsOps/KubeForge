@@ -109,8 +109,8 @@ cada sessão, o Learner Lab **para** as EC2 automaticamente (não deleta). Só r
    ```bash
    terraform output -raw kubeconfig_howto
    ```
-   Com o **DDNS ativo** (seção 7), o `sed` usa o **hostname** (não o IP), então o kubeconfig
-   fica estável entre sessões — você reusa o mesmo, sem refazer nada quando o IP muda:
+   Como o DDNS já foi configurado no passo 2, o `sed` usa o **hostname** (não o IP), então o
+   kubeconfig fica estável entre sessões — você reusa o mesmo, sem refazer nada quando o IP muda:
    ```bash
    # o scp usa o IP/host do server (SSH); o endpoint do kubeconfig usa o HOSTNAME:
    scp -i vockey.pem ubuntu@<server_public_ip>:~/.kube/config ~/.kube/config-kubeforge
@@ -118,8 +118,8 @@ cada sessão, o Learner Lab **para** as EC2 automaticamente (não deleta). Só r
    export KUBECONFIG=~/.kube/config-kubeforge
    kubectl get nodes -o wide   # N nós Ready, ARCH=arm64
    ```
-   > Sem DDNS (antes da seção 7) o `sed` usaria `<server_public_ip>` — mas aí você teria que
-   > refazer a cada sessão. Configure o DDNS (seção 7) e use o hostname.
+   > Detalhe de como o hostname se mantém apontado para o IP novo a cada sessão: seção 7
+   > (referência / troubleshooting).
 
 ## 6. Como o cluster se monta (user_data)
 
@@ -138,11 +138,11 @@ Ambos são **idempotentes**: pós-reset, se o k3s já está ativo, não reinstal
 > (rodar via SSH dentro de uma EC2) — mantido para quem quiser subir sem Terraform. O caminho
 > recomendado é o Terraform acima.
 
-## 7. DNS dinâmico (Dynu) — IP estável entre sessões
+## 7. DNS dinâmico (Dynu) — como funciona e troubleshooting
 
-> 📘 **Guia detalhado passo a passo:** [docs/dynu-ddns/README.md](docs/dynu-ddns/README.md)
-> — conceito, as duas senhas do Dynu, criação do hostname, validação e troubleshooting.
-> A seção abaixo é o resumo; o guia cobre os erros comuns (`badauth`, `nohost`, cert x509).
+> ⬆️ **A configuração é o passo 2 da seção 5** (criar o hostname + pegar a IP Update Password).
+> Esta seção é **referência**: explica como o hostname se mantém apontado para o IP novo e
+> lista os erros comuns. Guia detalhado com prints: [docs/dynu-ddns/README.md](docs/dynu-ddns/README.md).
 
 O IP público do server **muda** a cada nova sessão do Learner Lab. Para não editar o
 kubeconfig toda vez, o server atualiza sozinho um **hostname DDNS** (Dynu) apontando para o
@@ -161,38 +161,32 @@ kubeconfig usa https://<hostname>:6443 ◀──┘  (o hostname entra no --tls-
 Usamos o **IP Update Protocol** do Dynu (1 request, sem OAuth) — mais simples e robusto que a
 REST API v2 (que exigiria token OAuth + listar zona + achar o record id).
 
-**Passo a passo:**
+**Como o hostname se compõe:** o Terraform monta `kubeforge-<owner_initials>.<dynu_domain>`
+a partir do que você preencheu no tfvars (passo 3 da seção 5). Se preferir um nome fora do
+padrão, `dynu_hostname` ganha das iniciais. Deixar `owner_initials` e `dynu_hostname` ambos
+vazios faz o `terraform apply` **falhar** (precondition) — o DDNS é obrigatório neste lab.
 
-1. **Crie o hostname no Dynu** (Control Panel → DDNS). Convenção do projeto:
-   `kubeforge-<iniciais>.ddnsgeek.com` — ex.: `kubeforge-mwl.ddnsgeek.com` (Marcelo Wanderley Lima).
-2. **Pegue a IP Update Password** no Dynu — Control Panel → seu hostname → **IP Update Password**.
-   ⚠️ Use ESSA senha dedicada, **não a senha da conta**.
-3. **Preencha o `terraform.tfvars`** (caminho fácil — só as iniciais):
-   ```hcl
-   owner_initials = "mwl"            # -> monta kubeforge-mwl.ddnsgeek.com
-   dynu_domain    = "ddnsgeek.com"   # troque se usa outro domínio no Dynu
-   dynu_password  = "<sua IP Update Password>"
-   # (opcional) override do hostname completo, se o padrão não servir:
-   # dynu_hostname = "meu-nome-custom.exemplo.com"
-   ```
-   O Terraform compõe `kubeforge-<owner_initials>.<dynu_domain>`. Se preferir um nome fora
-   do padrão, preencha `dynu_hostname` (ele ganha das iniciais). Deixar ambos vazios faz o
-   `terraform apply` **falhar** (precondition) — o DDNS é obrigatório neste lab.
-4. `terraform apply` — o server instala o `systemd timer` (`kubeforge-dynu.timer`) e reporta o
-   IP no boot. Verifique com:
-   ```bash
-   ssh -i vockey.pem ubuntu@<server_public_ip> \
-     'sudo systemctl status kubeforge-dynu.timer; sudo journalctl -u kubeforge-dynu -n 5'
-   dig +short kubeforge-mwl.ddnsgeek.com      # deve retornar o IP público atual do server
-   ```
+**Verificação (depois do apply):**
+```bash
+ssh -i vockey.pem ubuntu@<server_public_ip> \
+  'sudo systemctl status kubeforge-dynu.timer; sudo journalctl -u kubeforge-dynu -n 5'
+dig +short kubeforge-mwl.ddnsgeek.com      # deve retornar o IP público atual do server
+```
+
+**Troubleshooting (erros comuns):**
+
+| Sintoma | Causa provável | Cura |
+|---|---|---|
+| `badauth` no journalctl | senha errada — usou a senha da **conta** em vez da **IP Update Password** | pegue a IP Update Password dedicada no Dynu e reaplique |
+| `nohost` no journalctl | hostname não existe no Dynu, ou digitado diferente do tfvars | confira que o hostname criado = `kubeforge-<owner_initials>.<dynu_domain>` |
+| `dig` retorna IP antigo/vazio | o timer ainda não rodou, ou o server não tem egress | `journalctl -u kubeforge-dynu`; aguarde ~30s pós-boot; confira a rota/IGW |
+| `kubectl` dá erro x509 (cert inválido) | hostname não estava no `--tls-san` quando o k3s subiu | o hostname vem do tfvars → o `--tls-san` já o inclui; se mudou o nome, recrie o server |
 
 **Segurança (trade-off honesto):** o segredo entra via `user_data`, que é **legível na console
 EC2** por quem tem acesso à conta. Por isso usamos a **IP Update Password dedicada e revogável**
 do Dynu (não a senha da conta): o pior caso é alguém repontar seu hostname, e você revoga a
 senha no Dynu. Não usamos SSM SecureString porque o IAM travado do Learner Lab (sem criar
-roles/instance profiles) tornaria a leitura do parâmetro pela EC2 pouco confiável. O DDNS é
-**obrigatório** neste lab — o `terraform apply` falha (precondition) se `owner_initials` e
-`dynu_hostname` estiverem ambos vazios.
+roles/instance profiles) tornaria a leitura do parâmetro pela EC2 pouco confiável.
 
 ## 8. Reset de 4 h (o que esperar)
 
