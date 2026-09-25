@@ -1,0 +1,34 @@
+# Ingress com TLS automático via cert-manager.
+#
+# A anotação cert-manager.io/cluster-issuer diz ao cert-manager para emitir um
+# cert para os hosts do bloco tls[] e guardá-lo no secret 'whoami-tls'.
+# O Traefik (Ingress Controller embutido no k3s) serve o app em HTTPS com esse cert.
+#
+# ⚠️ TROQUE:
+#   - kubeforge-mwl.ddnsgeek.com pelo SEU hostname (o mesmo do DDNS do LAB 01).
+#   - Comece com 'letsencrypt-staging'. Só troque para 'letsencrypt-prod' depois
+#     que o staging emitir com sucesso (READY=True no 'kubectl get certificate').
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: whoami
+  annotations:
+    cert-manager.io/cluster-issuer: letsencrypt-staging   # <-- staging primeiro
+spec:
+  ingressClassName: traefik
+  tls:
+    - hosts:
+        - kubeforge-mwl.ddnsgeek.com                        # <-- SEU hostname
+      secretName: whoami-tls
+  rules:
+    - host: kubeforge-mwl.ddnsgeek.com                      # <-- SEU hostname
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: whoami
+                port:
+                  number: 80

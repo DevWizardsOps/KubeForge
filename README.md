@@ -42,6 +42,9 @@ lab-02/    Opção B — cluster OKE (depende de lab-01/oci)
 lab-03+/   Kubernetes padrão (agnóstico de provedor)
 ```
 
+➡️ **[LAB 03 — Certificado TLS (cert-manager + Let's Encrypt)](lab-03/README.md)** — HTTPS
+válido no hostname DDNS, provedor-agnóstico.
+
 ## Convenções
 
 - **ARM64 first** — imagens e charts preferem `arm64`; o material assume esse alvo.
