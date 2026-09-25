@@ -126,14 +126,14 @@ Ambos são **idempotentes**: pós-reset, se o k3s já está ativo, não reinstal
 
 O IP público do server **muda** a cada nova sessão do Learner Lab. Para não editar o
 kubeconfig toda vez, o server atualiza sozinho um **hostname DDNS** (Dynu) apontando para o
-IP novo, no boot e a cada 5 min. Assim o kubeconfig usa um nome fixo
+IP novo, no boot e a cada 15 min. Assim o kubeconfig usa um nome fixo
 (`https://kubeforge-mwl.ddnsgeek.com:6443`) para sempre.
 
 **Como funciona:**
 
 ```text
 boot do server ─┐
-timer 5 min    ─┴─▶ IP público (IMDS) ─▶ GET api.dynu.com/nic/update?hostname=...&myip=...&password=...
+timer 15min    ─┴─▶ IP público (IMDS) ─▶ GET api.dynu.com/nic/update?hostname=...&myip=...&password=...
                                           │
 kubeconfig usa https://<hostname>:6443 ◀──┘  (o hostname entra no --tls-san do k3s → cert válido)
 ```

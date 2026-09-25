@@ -53,21 +53,38 @@ DYNU_HOSTNAME=$DYNU_HOSTNAME
 DYNU_PASSWORD=${dynu_password}
 EOF
 
-  # Script de update: pega o IP público via IMDS e reporta ao Dynu.
+  # Script de update: só chama a API do Dynu quando o IP MUDAR (evita rate limit
+  # — updates 'nochg' repetidos são o que provedores DDNS penalizam). Guarda o
+  # último IP reportado em /var/lib/kubeforge/last-ip.
+  mkdir -p /var/lib/kubeforge
   cat > /usr/local/bin/kubeforge-dynu-update.sh <<'SCRIPT'
 #!/usr/bin/env bash
 set -euo pipefail
 . /etc/kubeforge-dynu.env
+STATE=/var/lib/kubeforge/last-ip
 TOK="$(curl -s -X PUT 'http://169.254.169.254/latest/api/token' \
   -H 'X-aws-ec2-metadata-token-ttl-seconds: 300')"
 IP="$(curl -s -H "X-aws-ec2-metadata-token: $TOK" \
   http://169.254.169.254/latest/meta-data/public-ipv4)"
+
+# IP inalterado desde o último report bem-sucedido? Não chama a API.
+if [ -f "$STATE" ] && [ "$(cat "$STATE" 2>/dev/null)" = "$IP" ]; then
+  echo "$(date -u) dynu-update ip=$IP skip=unchanged"
+  exit 0
+fi
+
 RESP="$(curl -s "https://api.dynu.com/nic/update?hostname=$DYNU_HOSTNAME&myip=$IP&password=$DYNU_PASSWORD")"
 echo "$(date -u) dynu-update ip=$IP resp=$RESP"
+# Só grava o cache se o Dynu confirmou (good/nochg); erro NÃO atualiza o cache,
+# para retentar no próximo tick.
+case "$RESP" in
+  good*|nochg*) echo "$IP" > "$STATE" ;;
+  *) echo "$(date -u) dynu-update WARN resposta inesperada: $RESP" ;;
+esac
 SCRIPT
   chmod 0755 /usr/local/bin/kubeforge-dynu-update.sh
 
-  # systemd service (oneshot) + timer (no boot + a cada 5 min).
+  # systemd service (oneshot) + timer (no boot + a cada 15 min).
   cat > /etc/systemd/system/kubeforge-dynu.service <<'UNIT'
 [Unit]
 Description=KubeForge Dynu DDNS update
@@ -80,10 +97,10 @@ UNIT
 
   cat > /etc/systemd/system/kubeforge-dynu.timer <<'UNIT'
 [Unit]
-Description=KubeForge Dynu DDNS update (boot + a cada 5 min)
+Description=KubeForge Dynu DDNS update (boot + a cada 15 min; só chama API se o IP mudar)
 [Timer]
 OnBootSec=30
-OnUnitActiveSec=5min
+OnUnitActiveSec=15min
 Persistent=true
 [Install]
 WantedBy=timers.target

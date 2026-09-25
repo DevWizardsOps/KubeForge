@@ -89,7 +89,7 @@ Só isso. O Terraform monta o hostname das iniciais, injeta no `--tls-san` do k3
 2. Ele lê o IP público do server (via IMDS) e faz **1 request** ao Dynu:
    `GET https://api.dynu.com/nic/update?hostname=...&myip=<IP>&password=<senha>`
 3. O A record do hostname passa a apontar pro IP do server.
-4. Repete a cada 5 min (caso o IP mude no meio da sessão — raro).
+4. Repete a cada 15 min, mas SÓ chama a API do Dynu se o IP tiver mudado (cache em /var/lib/kubeforge/last-ip) — evita rate limit por updates repetidos.
 
 ## 7. Validar (após o apply)
 
