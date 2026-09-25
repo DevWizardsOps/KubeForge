@@ -31,3 +31,15 @@ my_ip_cidr = "SEU.IP.PUBLICO.AQUI/32"
 # Rede (padrões OK; mude só se colidir com algo seu).
 vpc_cidr           = "10.0.0.0/16"
 public_subnet_cidr = "10.0.1.0/24"
+
+# --- Dynu DDNS (opcional, mas recomendado para o reset de 4h) ---------------
+# O server atualiza este hostname sozinho no boot e a cada 5 min. Assim o
+# kubeconfig usa https://<hostname>:6443 e você NÃO precisa trocar o IP toda sessão.
+# O hostname precisa JÁ EXISTIR no Dynu (crie o A record antes).
+# Deixe dynu_hostname vazio ("") para desligar o DDNS.
+dynu_hostname = "kubeforge-mwl.ddnsgeek.com"
+
+# IP Update Password do Dynu — Control Panel > (seu hostname) > IP Update Password.
+# NÃO é a senha da conta: é uma senha DEDICADA a updates de IP, revogável.
+# Use ela (não a senha da conta) porque o user_data é legível na console EC2.
+dynu_password = "SUA_IP_UPDATE_PASSWORD_AQUI"

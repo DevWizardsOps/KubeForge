@@ -60,3 +60,21 @@ variable "my_ip_cidr" {
   description = "Seu IP público em CIDR (ex.: 203.0.113.4/32) para liberar SSH/6443/NodePort. NUNCA use 0.0.0.0/0."
   type        = string
 }
+
+# --- Dynu DDNS (atualização automática do IP do server) --------------------
+# Quando dynu_hostname != "", o server instala um systemd timer que reporta o
+# IP público ao Dynu no boot e a cada 5 min (IP Update Protocol). O hostname é
+# adicionado ao --tls-san do k3s, então o cert já nasce válido para o nome e o
+# kubeconfig usa https://<hostname>:6443 (nunca mais 'sed' de IP entre sessões).
+variable "dynu_hostname" {
+  description = "Hostname Dynu a atualizar (ex.: kubeforge-mwl.ddnsgeek.com). Vazio desliga o DDNS. O hostname deve já existir no Dynu."
+  type        = string
+  default     = ""
+}
+
+variable "dynu_password" {
+  description = "IP Update Password do Dynu (Control Panel > IP Update Password), NÃO a senha da conta. Guardada como SSM SecureString; nunca vai ao user_data em texto. Ponha no terraform.tfvars (gitignored)."
+  type        = string
+  default     = ""
+  sensitive   = true
+}

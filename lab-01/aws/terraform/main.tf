@@ -194,7 +194,9 @@ resource "aws_instance" "server" {
   }
 
   user_data = templatefile("${path.module}/templates/server-userdata.sh.tftpl", {
-    k3s_token = random_password.k3s_token.result
+    k3s_token     = random_password.k3s_token.result
+    dynu_hostname = var.dynu_hostname
+    dynu_password = var.dynu_password
   })
 
   tags = { Name = "kubeforge-k3s-server", Role = "server" }

@@ -23,17 +23,31 @@ output "ssh_server" {
   value       = "ssh -i vockey.pem ubuntu@${aws_eip.server.public_ip}"
 }
 
+output "cluster_endpoint" {
+  description = "Endpoint do k3s API — hostname Dynu se configurado, senão o IP público."
+  value       = var.dynu_hostname != "" ? "https://${var.dynu_hostname}:6443" : "https://${aws_eip.server.public_ip}:6443"
+}
+
+locals {
+  _howto_ddns = <<-EOT
+    # DDNS ativo (${var.dynu_hostname}) — endpoint estável, sem 'sed' de IP entre sessões:
+    scp -i vockey.pem ubuntu@${aws_eip.server.public_ip}:~/.kube/config ~/.kube/config-kubeforge
+    sed -i '' 's#https://127.0.0.1:6443#https://${var.dynu_hostname}:6443#' ~/.kube/config-kubeforge
+    export KUBECONFIG=~/.kube/config-kubeforge
+    kubectl get nodes -o wide   # ${1 + var.agent_count} nós Ready, ARCH=arm64
+    # Nas próximas sessões o IP muda mas o hostname NÃO — reuse o mesmo kubeconfig.
+  EOT
+
+  _howto_ip = <<-EOT
+    # Sem DDNS — use o IP público (muda a cada sessão):
+    scp -i vockey.pem ubuntu@${aws_eip.server.public_ip}:~/.kube/config ~/.kube/config-kubeforge
+    sed -i '' 's#https://127.0.0.1:6443#https://${aws_eip.server.public_ip}:6443#' ~/.kube/config-kubeforge
+    export KUBECONFIG=~/.kube/config-kubeforge
+    kubectl get nodes -o wide   # ${1 + var.agent_count} nós Ready, ARCH=arm64
+  EOT
+}
+
 output "kubeconfig_howto" {
   description = "Como pegar o kubeconfig no seu Mac (rode após o cluster subir)."
-  value       = <<-EOT
-    # 1) Copie o kubeconfig do server para o seu Mac:
-    scp -i vockey.pem ubuntu@${aws_eip.server.public_ip}:~/.kube/config ~/.kube/config-kubeforge
-
-    # 2) Troque o endpoint 127.0.0.1 pelo IP público do server:
-    sed -i '' 's#https://127.0.0.1:6443#https://${aws_eip.server.public_ip}:6443#' ~/.kube/config-kubeforge
-
-    # 3) Use:
-    export KUBECONFIG=~/.kube/config-kubeforge
-    kubectl get nodes -o wide   # deve mostrar ${1 + var.agent_count} nós Ready, ARCH=arm64
-  EOT
+  value       = var.dynu_hostname != "" ? local._howto_ddns : local._howto_ip
 }

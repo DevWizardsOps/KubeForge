@@ -118,28 +118,79 @@ Ambos são **idempotentes**: pós-reset, se o k3s já está ativo, não reinstal
 > (rodar via SSH dentro de uma EC2) — mantido para quem quiser subir sem Terraform. O caminho
 > recomendado é o Terraform acima.
 
-## 7. Reset de 4 h (o que esperar)
+## 7. DNS dinâmico (Dynu) — IP estável entre sessões
 
-Ao fim da sessão, as EC2 **param** (stop). Na próxima sessão:
+O IP público do server **muda** a cada nova sessão do Learner Lab. Para não editar o
+kubeconfig toda vez, o server atualiza sozinho um **hostname DDNS** (Dynu) apontando para o
+IP novo, no boot e a cada 5 min. Assim o kubeconfig usa um nome fixo
+(`https://kubeforge-mwl.ddnsgeek.com:6443`) para sempre.
+
+**Como funciona:**
+
+```text
+boot do server ─┐
+timer 5 min    ─┴─▶ IP público (IMDS) ─▶ GET api.dynu.com/nic/update?hostname=...&myip=...&password=...
+                                          │
+kubeconfig usa https://<hostname>:6443 ◀──┘  (o hostname entra no --tls-san do k3s → cert válido)
+```
+
+Usamos o **IP Update Protocol** do Dynu (1 request, sem OAuth) — mais simples e robusto que a
+REST API v2 (que exigiria token OAuth + listar zona + achar o record id).
+
+**Passo a passo:**
+
+1. **Crie o hostname no Dynu** (Control Panel → DDNS). Convenção do projeto:
+   `kubeforge-<iniciais>.ddnsgeek.com` — ex.: `kubeforge-mwl.ddnsgeek.com` (Marcelo Wanderley Lima).
+2. **Pegue a IP Update Password** no Dynu — Control Panel → seu hostname → **IP Update Password**.
+   ⚠️ Use ESSA senha dedicada, **não a senha da conta**.
+3. **Preencha o `terraform.tfvars`:**
+   ```hcl
+   dynu_hostname = "kubeforge-mwl.ddnsgeek.com"
+   dynu_password = "<sua IP Update Password>"
+   ```
+4. `terraform apply` — o server instala o `systemd timer` (`kubeforge-dynu.timer`) e reporta o
+   IP no boot. Verifique com:
+   ```bash
+   ssh -i vockey.pem ubuntu@<server_public_ip> \
+     'sudo systemctl status kubeforge-dynu.timer; sudo journalctl -u kubeforge-dynu -n 5'
+   dig +short kubeforge-mwl.ddnsgeek.com      # deve retornar o IP público atual do server
+   ```
+
+**Segurança (trade-off honesto):** o segredo entra via `user_data`, que é **legível na console
+EC2** por quem tem acesso à conta. Por isso usamos a **IP Update Password dedicada e revogável**
+do Dynu (não a senha da conta): o pior caso é alguém repontar seu hostname, e você revoga a
+senha no Dynu. Não usamos SSM SecureString porque o IAM travado do Learner Lab (sem criar
+roles/instance profiles) tornaria a leitura do parâmetro pela EC2 pouco confiável. Deixe
+`dynu_hostname = ""` no tfvars para desligar o DDNS por completo.
+
+## 8. Reset de 4 h (o que esperar)
+
+Ao fim da sessão, as EC2 **param** (stop) e o **IP público muda** na próxima sessão. Com o DDNS
+(seção 7) isso é transparente:
 
 1. Reabra o lab e **Start** — as EC2 reiniciam automaticamente.
-2. O **Elastic IP do server é mantido** (endpoint estável); os agents reencontram o server
-   pelo **IP privado** (imutável dentro da VPC). O cluster volta sozinho.
-3. Se um agent não reconectar, `ssh` nele e confira `sudo systemctl status k3s-agent`.
+2. O `kubeforge-dynu.timer` roda no boot e **repointa o hostname para o IP novo** em ~30s.
+3. Os agents reencontram o server pelo **IP privado** (imutável dentro da VPC) — o cluster
+   interno volta sozinho.
+4. Seu kubeconfig no Mac usa o **hostname** (não o IP), então **nada muda** do seu lado.
+5. Se um agent não reconectar, `ssh` nele e confira `sudo systemctl status k3s-agent`.
 
-## 8. Segurança
+> Sem DDNS: o IP muda e você precisa refazer o `sed` do endpoint no kubeconfig a cada sessão.
+
+## 9. Segurança
 
 - SSH / 6443 / NodePort restritos ao **seu IP** (`my_ip_cidr`, `/32`) — nunca `0.0.0.0/0`.
 - `vockey.pem`, `terraform.tfvars` e `*.tfstate` **não versionados** (`.gitignore` cobre).
 - Credenciais do Learner Lab são **temporárias** (trocam a cada sessão) — nunca commitar.
+- IP Update Password do Dynu: dedicada e revogável (ver seção 7).
 
-## 9. Resultado esperado
+## 10. Resultado esperado
 
 - N EC2 Graviton (ARM64) no Learner Lab, VPC nova sem NAT.
 - k3s ativo, `kubectl get nodes` → N nós **Ready**, `ARCH=arm64`.
 - Base pronta para os labs 03+ (agnósticos de provedor a partir daqui).
 
-## 10. Preparação para o próximo lab
+## 11. Preparação para o próximo lab
 
 Com o cluster k3s de pé, o **LAB 03** (primeiro workload) roda igual em k3s ou OKE — os
 manifests são padrão Kubernetes. A escolha de provedor (Opção A/B) só afeta os labs 01-02.
