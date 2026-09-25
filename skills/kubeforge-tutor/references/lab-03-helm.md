@@ -2,6 +2,12 @@
 
 README do lab: `~/git/KubeForge/lab-03/README.md`
 
+## Recurso visual de abertura
+
+Antes de digitar, mostre o infográfico `lab-03/docs/images/helm-overview.png` — ele resume
+os 3 pilares (Chart/Repository/Release), a arquitetura (Helm Client + Library em Go + estado
+em Secrets) e o que o Helm permite. Use-o para ancorar o vocabulário antes do hands-on.
+
 ## O conceito em uma frase
 
 Helm é o **gerenciador de pacotes** do Kubernetes: transforma YAML fixo num **template

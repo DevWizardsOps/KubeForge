@@ -19,6 +19,14 @@ YAML solto → helm chart (Chart.yaml + values + templates) → install → upgr
 
 ## 2. Por que Helm (e não `kubectl apply`)
 
+![Helm: o gerenciador de pacotes para Kubernetes — três pilares (Chart, Repository, Release), arquitetura (Helm Client, Helm Library em Go, estado no cluster via Secrets) e o que permite fazer (instalar apps prontos, parametrizar por ambiente, upgrade/rollback, dependências)](docs/images/helm-overview.png)
+
+Os **três pilares** (esquerda da imagem): **Chart** é o pacote (equivale a `.deb`/RPM ou
+fórmula do Homebrew); **Repository** é onde charts são compartilhados (ex.: Artifact Hub);
+**Release** é uma instância do chart rodando no cluster — dá pra instalar o mesmo chart N vezes,
+cada uma um release independente. O estado de cada release fica em **Secrets nativos** do
+cluster (sem banco próprio — o Helm 3 dispensou o Tiller).
+
 | `kubectl apply -f` | Helm |
 |---|---|
 | YAML fixo, copiado/editado por ambiente | **1 template + `values`** por ambiente |
