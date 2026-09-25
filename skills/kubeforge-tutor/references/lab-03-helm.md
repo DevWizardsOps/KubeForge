@@ -31,8 +31,13 @@ templates/  ──┘                                                           
 ## Roteiro (o que fazer, na ordem)
 
 1. **Mostre o problema:** `kubectl apply` de YAML solto não versiona nem reverte.
-2. **Anatomia:** abra `Chart.yaml` (version do chart × appVersion do app), `values.yaml`
-   (os botões), `templates/` (o molde). O `_helpers.tpl` existe para não repetir labels.
+2. **Anatomia + a mágica do template:** abra `Chart.yaml` (version do chart × appVersion
+   do app), `values.yaml` (os botões) e um template. O momento "ahá" é o **antes→depois**:
+   mostre a linha `replicas: {{ .Values.replicaCount }}` no `deployment.yaml` e rode
+   `helm template whoami charts/whoami` ao lado — a turma vê `{{...}}` virar `replicas: 2`.
+   Explique a sintaxe que aparece (`.Values`, `.Release.Name`, `include` do `_helpers.tpl`,
+   `toYaml | nindent`, o `if` do Ingress). O `_helpers.tpl` existe para não repetir labels.
+   Prove que os botões funcionam: `--set replicaCount=3` e veja o render mudar.
 3. **Dry-run primeiro:** `helm template` mostra o YAML final SEM tocar no cluster — sempre
    renderize antes de instalar. `helm lint` valida o chart.
 4. **Install → upgrade → rollback:** o ciclo que prova o valor. `--set replicaCount=3` num

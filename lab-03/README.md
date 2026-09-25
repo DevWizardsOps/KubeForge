@@ -47,6 +47,53 @@ charts/whoami/
     ingress.yaml          Ingress+TLS (condicional em ingress.enabled)
 ```
 
+### Como um template vira YAML (a mágica do Helm)
+
+Um arquivo em `templates/` **não é YAML fixo** — é um molde. O trecho `{{ ... }}` é
+substituído pelo motor de template (Go templates) com os dados do `values.yaml`. Exemplo,
+o `templates/deployment.yaml`:
+
+```yaml
+spec:
+  replicas: {{ .Values.replicaCount }}          # ← vem do values.yaml
+  ...
+      containers:
+        - name: whoami
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}   # bloco inteiro do values
+```
+
+Com `values.yaml` = `replicaCount: 2`, `image.tag: v1.10.3`, o Helm **renderiza**:
+
+```yaml
+spec:
+  replicas: 2
+  ...
+      containers:
+        - name: whoami
+          image: "traefik/whoami:v1.10.3"
+          resources:
+            requests: { cpu: 10m, memory: 16Mi }
+            limits:   { cpu: 100m, memory: 64Mi }
+```
+
+**A sintaxe que aparece no chart:**
+
+| Construção | O que faz |
+|---|---|
+| `{{ .Values.x }}` | injeta um valor do `values.yaml` (ou do `--set x=`) |
+| `{{ .Release.Name }}` | nome do release (`helm install <nome> ...`) — variável embutida |
+| `{{ include "whoami.labels" . }}` | insere um bloco definido no `_helpers.tpl` (DRY) |
+| `{{- toYaml .Values.resources }}` | serializa um sub-objeto do values como YAML |
+| `\| nindent 12` | reindenta o bloco com 12 espaços (encaixa no lugar certo) |
+| `{{- if .Values.ingress.enabled }}` | renderiza o Ingress **só se** `enabled: true` |
+| `{{-` / `-}}` | o `-` "come" o espaço em branco em volta (YAML limpo) |
+
+O `_helpers.tpl` guarda pedaços reutilizáveis (nome, labels) para os 3 templates não
+repetirem a mesma expressão — é o `include` acima que os puxa. **Um template, N `values`:**
+é isso que substitui manter vários YAMLs por ambiente.
+
 ## 4. Instalar o Helm
 
 ```bash
