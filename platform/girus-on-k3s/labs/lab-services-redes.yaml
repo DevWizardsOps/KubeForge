@@ -130,7 +130,7 @@ data:
           - command: "kubectl get service backend-service -n servicos-lab -o jsonpath='{.spec.type}' 2>/dev/null || echo ''"
             expectedOutput: "ClusterIP"
             errorMessage: "O Serviço 'backend-service' do tipo ClusterIP não foi criado corretamente."
-          - command: "kubectl get endpoints backend-service -n servicos-lab -o jsonpath='{.subsets[0].addresses}' 2>/dev/null | grep -c 'ip'"
+          - command: "kubectl get endpointslices -n servicos-lab -l kubernetes.io/service-name=backend-service -o jsonpath='{range .items[*].endpoints[*]}{.addresses[0]}{\"\\n\"}{end}' 2>/dev/null | grep -c ."
             expectedOutput: "2"
             errorMessage: "O Serviço 'backend-service' não está associado a 2 Pods backend. Verifique se o seletor do Serviço corresponde às labels dos Pods."
 
