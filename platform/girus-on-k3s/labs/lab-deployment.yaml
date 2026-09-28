@@ -141,7 +141,7 @@ data:
             title: "Validação"
             content: "A validação verificará se o ConfigMap existe e se está montado corretamente no deployment."
         validation:
-          - command: "kubectl get configmap nginx-config -n challenge-namespace -o jsonpath='{.data[\"index.html\"]}' 2>/dev/null || echo ''"
+          - command: "kubectl get configmap nginx-config -n challenge-namespace -o jsonpath='{.data.index\\.html}' 2>/dev/null || echo ''"
             expectedOutput: "desafio-ok"
             errorMessage: "O ConfigMap 'nginx-config' não foi criado corretamente ou não contém a chave 'index.html' com o valor esperado."
           - command: "kubectl get deployment nginx-deployment -n challenge-namespace -o jsonpath='{.spec.template.spec.volumes[?(@.name==\"config-volume\")].configMap.name}' 2>/dev/null || echo ''"
