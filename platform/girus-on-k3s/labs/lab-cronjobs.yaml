@@ -218,8 +218,8 @@ data:
             title: "Monitoramento de Longo Prazo"
             content: "Em ambientes de produção, use ferramentas como o Prometheus para monitorar métricas de CronJobs ao longo do tempo."
         validation:
-          - command: "kubectl get cronjob hello 2>/dev/null || echo 'CronJob excluído'"
-            expectedOutput: "CronJob excluído"
+          - command: "kubectl get cronjob hello 2>/dev/null || echo 'CronJob removido'"
+            expectedOutput: "CronJob removido"
             errorMessage: "O CronJob 'hello' não foi excluído corretamente."
 
       - name: "Implementando CronJobs para Aplicações Reais"
@@ -299,6 +299,6 @@ data:
             title: "Notificações de Status"
             content: "Em ambientes de produção, adicione código para enviar notificações sobre o status do backup (por exemplo, via Slack, email ou um sistema de monitoramento)."
         validation:
-          - command: "kubectl get cronjob database-backup 2>/dev/null || echo 'CronJob excluído'"
-            expectedOutput: "CronJob excluído"
+          - command: "kubectl get cronjob database-backup 2>/dev/null || echo 'CronJob removido'"
+            expectedOutput: "CronJob removido"
             errorMessage: "O CronJob 'database-backup' não foi excluído corretamente."
