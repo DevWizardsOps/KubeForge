@@ -83,8 +83,8 @@ data:
             title: "Testando Expressões Cron"
             content: "Ferramentas como 'cronexpressiondescriptor.com' ou 'crontab.guru' podem ajudar a verificar e entender expressões cron."
         validation:
-          - command: "kubectl api-resources | grep -i 'cronjob'"
-            expectedExpression: "~ cronjobs"
+          - command: "kubectl api-resources 2>/dev/null | grep -qi 'cronjob' && echo cronjobs || echo fail"
+            expectedOutput: "cronjobs"
             errorMessage: "API de CronJobs não encontrada no cluster. Verifique se o cluster está em execução."
 
       - name: "Criando seu Primeiro CronJob"
@@ -163,8 +163,8 @@ data:
           - command: "kubectl get cronjobs | grep -q hello && echo 'CronJob encontrado' || echo 'CronJob não encontrado'"
             expectedOutput: "CronJob encontrado"
             errorMessage: "O CronJob 'hello' não foi criado corretamente."
-          - command: "kubectl get jobs --selector=job-name | wc -l"
-            expectedExpression: "> 0"
+          - command: "kubectl get jobs --no-headers 2>/dev/null | grep -q . && echo ok || echo fail"
+            expectedOutput: "ok"
             errorMessage: "Nenhum Job foi criado pelo CronJob. Talvez seja necessário aguardar o próximo minuto."
 
       - name: "Gerenciando CronJobs"
