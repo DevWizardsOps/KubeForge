@@ -1,0 +1,51 @@
+# ============================================================================
+# Ingress TLS para o frontend do GIRUS — mesmo padrão do LAB 02.
+# ============================================================================
+# Dá ao Girus uma URL HTTPS estável e válida (Let's Encrypt), coisa que o Kind
+# local do CLI oficial não tem. Reusa o Traefik (embutido no k3s) + o
+# cert-manager e o ClusterIssuer 'letsencrypt-prod' que o LAB 02 já instalou.
+#
+# HOSTNAME via WILDCARD: o DDNS (Dynu) já tem um registro curinga
+# '*.kubeforge-<iniciais>.ddnsgeek.com' apontando para o IP do server. Então
+# QUALQUER subdomínio resolve para o cluster SEM registrar nada novo. O Girus
+# usa 'girus.kubeforge-<iniciais>.ddnsgeek.com' — cai no wildcard, e o Traefik
+# roteia pelo header Host:. Padrão da trilha: cada serviço ganha
+# '<nome>.kubeforge-<iniciais>.ddnsgeek.com' de graça.
+#
+# PRÉ-REQUISITOS:
+#   - LAB 01: cluster k3s + registro wildcard '*.kubeforge-<iniciais>' no Dynu
+#     (A -> IP do server). Já existe se você seguiu o LAB 01.
+#   - LAB 02: cert-manager + ClusterIssuer 'letsencrypt-prod' Ready.
+#
+# ⚠️ TROQUE 'kubeforge-mwl' pelas SUAS iniciais (o host vira
+#    girus.kubeforge-<suas-iniciais>.ddnsgeek.com).
+#
+# Nota: o wildcard cobre UM nível (*.kubeforge-mwl), então
+# 'girus.kubeforge-mwl.ddnsgeek.com' resolve; nomes com nível extra não.
+#
+# Aplicar:  kubectl apply -f 02-girus-ingress.yaml
+# ============================================================================
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: girus-frontend
+  namespace: girus
+  annotations:
+    cert-manager.io/cluster-issuer: letsencrypt-prod
+spec:
+  ingressClassName: traefik
+  tls:
+    - hosts:
+        - girus.kubeforge-mwl.ddnsgeek.com           # <-- girus.kubeforge-<iniciais>
+      secretName: girus-frontend-tls
+  rules:
+    - host: girus.kubeforge-mwl.ddnsgeek.com         # <-- girus.kubeforge-<iniciais>
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: girus-frontend
+                port:
+                  number: 80

@@ -1,0 +1,280 @@
+# ============================================================================
+# GIRUS on k3s — plataforma de aprendizado de Kubernetes (Fase 1 da trilha)
+# ============================================================================
+# Adaptado do defaultDeployment.yaml do girus-cli (github.com/badtuxx/girus-cli,
+# GPL-3.0) para rodar no NOSSO k3s ARM64 (LAB 01) em vez do Kind que o CLI cria.
+#
+# Diferenças em relação ao manifesto original do Girus:
+#   1. Imagens PINADAS em :0.5.0 (multi-arch, com build arm64 confirmado) em vez
+#      de :latest — reprodutível e garante o pull certo no Graviton/ARM64.
+#   2. Services seguem ClusterIP; o acesso externo é via Ingress+TLS (arquivo 02),
+#      reusando o Traefik + cert-manager do LAB 02 (o Kind original usava
+#      port-forward, que não dá URL estável).
+#   3. RBAC do usuário de lab RESTRINGIDO: o manifesto original concede
+#      cluster-admin GLOBAL à ServiceAccount de lab (aceitável num Kind
+#      descartável, arriscado num cluster que persiste entre sessões). Aqui o
+#      poder é reduzido a um ClusterRole com os verbos que os labs realmente
+#      usam. Veja o README (seção "Segurança / RBAC").
+#
+# Aplicar:  kubectl apply -f 01-girus-platform.yaml
+# ============================================================================
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: girus
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: girus-sa
+  namespace: girus
+---
+# Role namespaced: o backend gerencia pods/exec/log DENTRO do namespace girus.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: girus-role
+  namespace: girus
+rules:
+  - apiGroups: [""]
+    resources: ["pods", "pods/log", "pods/exec"]
+    verbs: ["get", "list", "create", "delete", "watch"]
+---
+# ClusterRole do BACKEND do Girus: precisa criar os namespaces/pods/etc dos labs.
+# Idêntico ao original — é o mínimo que o orquestrador de labs exige.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: girus-cluster-role
+rules:
+  - apiGroups: [""]
+    resources: ["namespaces"]
+    verbs: ["get", "list", "watch", "create", "delete"]
+  - apiGroups: [""]
+    resources: ["nodes"]
+    verbs: ["get", "list", "watch"]
+  - apiGroups: [""]
+    resources: ["pods", "pods/log", "pods/exec"]
+    verbs: ["get", "list", "watch", "create", "delete"]
+  - apiGroups: ["apps"]
+    resources: ["deployments"]
+    verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+  - apiGroups: [""]
+    resources: ["services", "configmaps", "secrets", "serviceaccounts"]
+    verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+  - apiGroups: ["rbac.authorization.k8s.io"]
+    resources: ["roles", "rolebindings"]
+    verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: girus-cluster-rolebinding
+subjects:
+  - kind: ServiceAccount
+    name: girus-sa
+    namespace: girus
+roleRef:
+  kind: ClusterRole
+  name: girus-cluster-role
+  apiGroup: rbac.authorization.k8s.io
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: girus-rolebinding
+  namespace: girus
+subjects:
+  - kind: ServiceAccount
+    name: girus-sa
+    namespace: girus
+roleRef:
+  kind: Role
+  name: girus-role
+  apiGroup: rbac.authorization.k8s.io
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: girus-config
+  namespace: girus
+data:
+  config.yaml: |
+    lab:
+      defaultImage: "ubuntu:latest"
+      podNamePrefix: "lab"
+      containerName: "linux-lab"
+      command:
+        - "sleep"
+        - "infinity"
+      resources:
+        cpuRequest: "100m"
+        cpuLimit: "500m"
+        memoryRequest: "64Mi"
+        memoryLimit: "256Mi"
+      envVars:
+        TERM: "xterm-256color"
+        SHELL: "/bin/bash"
+        privileged: false
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: girus-backend
+  namespace: girus
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: girus-backend
+  template:
+    metadata:
+      labels:
+        app: girus-backend
+    spec:
+      serviceAccountName: girus-sa
+      containers:
+        - name: backend
+          image: linuxtips/girus-backend:0.5.0   # multi-arch (arm64 confirmado)
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8080
+          env:
+            - name: PORT
+              value: "8080"
+            - name: GIN_MODE
+              value: "release"
+            - name: LAB_DEFAULT_IMAGE
+              valueFrom:
+                configMapKeyRef:
+                  name: girus-config
+                  key: lab.defaultImage
+                  optional: true
+          volumeMounts:
+            - name: config-volume
+              mountPath: /app/config
+      volumes:
+        - name: config-volume
+          configMap:
+            name: girus-config
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: girus-frontend
+  namespace: girus
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: girus-frontend
+  template:
+    metadata:
+      labels:
+        app: girus-frontend
+    spec:
+      containers:
+        - name: frontend
+          image: linuxtips/girus-frontend:0.5.0   # multi-arch (arm64 confirmado)
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 80
+          volumeMounts:
+            - name: nginx-config
+              mountPath: /etc/nginx/conf.d
+      volumes:
+        - name: nginx-config
+          configMap:
+            name: nginx-config
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: girus-backend
+  namespace: girus
+spec:
+  selector:
+    app: girus-backend
+  ports:
+    - port: 8080
+      targetPort: 8080
+  type: ClusterIP
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: girus-frontend
+  namespace: girus
+spec:
+  selector:
+    app: girus-frontend
+  ports:
+    - port: 80
+      targetPort: 80
+  type: ClusterIP
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: nginx-config
+  namespace: girus
+data:
+  default.conf: |
+    server {
+        listen 80;
+        server_name localhost;
+        root /usr/share/nginx/html;
+        index index.html;
+
+        gzip on;
+        gzip_vary on;
+        gzip_min_length 1000;
+        gzip_proxied any;
+        gzip_types text/plain text/css application/json application/javascript text/xml application/xml application/xml+rss text/javascript;
+        gzip_comp_level 6;
+
+        location ~* \.(jpg|jpeg|png|gif|ico|css|js)$ {
+            expires 30d;
+            add_header Cache-Control "public, no-transform";
+        }
+
+        # API -> backend
+        location /api/ {
+            proxy_pass http://girus-backend:8080/api/;
+            proxy_http_version 1.1;
+            proxy_set_header Upgrade $http_upgrade;
+            proxy_set_header Connection "upgrade";
+            proxy_set_header Host $host;
+            proxy_set_header X-Real-IP $remote_addr;
+            proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+            proxy_set_header X-Forwarded-Proto $scheme;
+            proxy_buffering off;
+            proxy_request_buffering off;
+        }
+
+        # WebSocket (terminal interativo) -> backend
+        location /ws/ {
+            proxy_pass http://girus-backend:8080/ws/;
+            proxy_http_version 1.1;
+            proxy_set_header Upgrade $http_upgrade;
+            proxy_set_header Connection "upgrade";
+            proxy_set_header Host $host;
+            proxy_set_header X-Real-IP $remote_addr;
+            proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+            proxy_read_timeout 86400;
+        }
+
+        # React Router (SPA)
+        location / {
+            try_files $uri $uri/ /index.html;
+        }
+    }
+# ============================================================================
+# NOTA sobre o usuário de lab: o manifesto ORIGINAL do Girus cria aqui um
+# namespace 'lab-test-user' + ClusterRoleBinding para 'cluster-admin' GLOBAL.
+# REMOVIDO de propósito nesta versão k3s — dar cluster-admin a uma SA de lab
+# num cluster persistente é risco desnecessário. O backend do Girus já cria os
+# namespaces/pods de cada lab sob demanda via girus-cluster-role (acima), com
+# verbos específicos. Se um lab exigir mais permissão, conceda o mínimo
+# adicional a ELE, nunca cluster-admin global. Ver README (Segurança / RBAC).
+# ============================================================================
