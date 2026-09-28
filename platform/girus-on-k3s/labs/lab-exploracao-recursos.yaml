@@ -134,10 +134,10 @@ data:
             title: "Verificação Pós-Remoção"
             content: "Use 'kubectl get all -n desafio-ns' para verificar quais recursos ainda existem no namespace."
         validation:
-          - command: "kubectl get pod -n desafio-ns nginx-pod 2>&1 | grep -i 'not found' || echo 'Pod ainda existe'"
+          - command: "kubectl get pod -n desafio-ns nginx-pod 2>&1 | grep -qi 'not found' && echo 'not found' || echo 'existe'"
             expectedOutput: "not found"
             errorMessage: "O pod 'nginx-pod' não foi removido corretamente."
-          - command: "kubectl get deployment -n desafio-ns web-app 2>&1 | grep -i 'not found' || echo 'Deployment ainda existe'"
+          - command: "kubectl get deployment -n desafio-ns web-app 2>&1 | grep -qi 'not found' && echo 'not found' || echo 'existe'"
             expectedOutput: "not found"
             errorMessage: "O deployment 'web-app' não foi removido corretamente."
           - command: "kubectl get pod -n desafio-ns problem-pod -o jsonpath='{.metadata.name}' 2>/dev/null || echo ''"
