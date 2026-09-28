@@ -175,7 +175,7 @@ data:
           - command: "kubectl get service frontend-service -n servicos-lab -o jsonpath='{.spec.type}' 2>/dev/null || echo ''"
             expectedOutput: "NodePort"
             errorMessage: "O Serviço 'frontend-service' do tipo NodePort não foi criado corretamente."
-          - command: "NODEPORT=$(kubectl get service frontend-service -n servicos-lab -o jsonpath='{.spec.ports[0].nodePort}' 2>/dev/null || echo ''); NODE_IP=$(kubectl get nodes -o jsonpath='{.items[0].status.addresses[?(@.type==\"InternalIP\")].address}' 2>/dev/null); curl -s $NODE_IP:$NODEPORT/api | grep -i 'nginx' || echo 'fail'"
+          - command: "NODEPORT=$(kubectl get service frontend-service -n servicos-lab -o jsonpath='{.spec.ports[0].nodePort}' 2>/dev/null || echo ''); NODE_IP=$(kubectl get nodes -o jsonpath='{.items[0].status.addresses[?(@.type==\"InternalIP\")].address}' 2>/dev/null); curl -s $NODE_IP:$NODEPORT/api | grep -qi 'nginx' && echo nginx || echo fail"
             expectedOutput: "nginx"
             errorMessage: "Não foi possível acessar o backend através do frontend. Verifique a configuração do proxy reverso."
 
