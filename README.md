@@ -33,9 +33,9 @@ skills/     Skill-tutor da trilha (ensino)
 ➡️ **[LAB 02 — Certificado TLS (cert-manager + Let's Encrypt)](lab-02/README.md)** — HTTPS
 válido no hostname DDNS.
 
-> **Helm** deixou de ser um lab numerado: virou **lab interativo no Girus**
-> ([`platform/girus-on-k3s/labs/lab-helm.yaml`](platform/girus-on-k3s/labs/lab-helm.yaml)),
-> com a teoria de referência em [`docs/helm.md`](docs/helm.md).
+➡️ **Próximo passo: [subir a plataforma GIRUS](platform/girus-on-k3s/README.md)** — com o
+cluster (LAB 01) e o HTTPS (LAB 02) no ar, você sobe o Girus, onde todos os labs de
+Kubernetes rodam de forma interativa (terminal no browser + validação automática).
 
 ## Fase 1 — Labs Girus (aprendizado interativo de k8s)
 
