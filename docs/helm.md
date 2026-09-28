@@ -1,12 +1,14 @@
-# LAB 03 — Helm (empacotamento)
+# Helm — empacotamento de aplicações (documentação de referência)
 
-> Terceiro laboratório da trilha [KubeForge](../README.md). Empacota o app **whoami**
-> (o mesmo do [LAB 02](../lab-02/README.md)) como um **Helm chart**: um template, N
-> configurações via `values`. Ensina `install` / `upgrade` / `rollback` — o que o
-> `kubectl apply` de YAML solto não dá.
+> Material de referência da trilha [KubeForge](../README.md) sobre **Helm**. O
+> **lab interativo** de Helm agora roda dentro da plataforma **Girus** (Fase 1/2)
+> — ver [`platform/girus-on-k3s/labs/lab-helm.yaml`](../platform/girus-on-k3s/labs/lab-helm.yaml).
+> Este documento é o "porquê" e a teoria (conceitos, anatomia do chart, sintaxe
+> de template) que complementam a prática guiada no Girus.
 >
-> **Pré-requisito:** cluster do [LAB 01](../lab-01/README.md) no ar e o cert-manager +
-> issuers do [LAB 02](../lab-02/README.md) instalados (o chart reusa o `letsencrypt-prod`).
+> O exemplo usado aqui — o app **whoami** empacotado como chart — está preservado
+> em [`docs/examples/helm-whoami-chart/`](examples/helm-whoami-chart/) e reusa o
+> Ingress+TLS do [LAB 02](../lab-02/README.md) (issuer `letsencrypt-prod`).
 
 ## 1. Objetivo
 
@@ -19,7 +21,7 @@ YAML solto → helm chart (Chart.yaml + values + templates) → install → upgr
 
 ## 2. Por que Helm (e não `kubectl apply`)
 
-![Helm: o gerenciador de pacotes para Kubernetes — três pilares (Chart, Repository, Release), arquitetura (Helm Client, Helm Library em Go, estado no cluster via Secrets) e o que permite fazer (instalar apps prontos, parametrizar por ambiente, upgrade/rollback, dependências)](docs/images/helm-overview.png)
+![Helm: o gerenciador de pacotes para Kubernetes — três pilares (Chart, Repository, Release), arquitetura (Helm Client, Helm Library em Go, estado no cluster via Secrets) e o que permite fazer (instalar apps prontos, parametrizar por ambiente, upgrade/rollback, dependências)](images/helm-overview.png)
 
 Os **três pilares** (esquerda da imagem): **Chart** é o pacote (equivale a `.deb`/RPM ou
 fórmula do Homebrew); **Repository** é onde charts são compartilhados (ex.: Artifact Hub);
@@ -34,10 +36,10 @@ cluster (sem banco próprio — o Helm 3 dispensou o Tiller).
 | rollback = você reverte à mão | **`helm rollback`** em 1 comando |
 | sem visão do conjunto | **release** agrupa todos os objetos |
 
-## 3. Anatomia do chart (o que tem em `charts/whoami/`)
+## 3. Anatomia do chart (o que tem em `docs/examples/helm-whoami-chart/`)
 
 ```text
-charts/whoami/
+helm-whoami-chart/
   Chart.yaml              metadados: nome, version (do chart), appVersion (do app)
   values.yaml             os "botões": replicaCount, image, resources, ingress...
   templates/
@@ -107,11 +109,11 @@ helm version
 
 ## 5. Renderizar antes de aplicar (dry-run)
 
-Veja o YAML que o chart gera, sem tocar no cluster:
+Veja o YAML que o chart gera, sem tocar no cluster (a partir da raiz do repo):
 ```bash
-cd lab-03
-helm lint charts/whoami                    # valida o chart
-helm template whoami charts/whoami         # imprime os manifests renderizados
+CHART=docs/examples/helm-whoami-chart
+helm lint $CHART                           # valida o chart
+helm template whoami $CHART                # imprime os manifests renderizados
 ```
 
 ## 6. Instalar o release
@@ -128,7 +130,7 @@ helm template whoami charts/whoami         # imprime os manifests renderizados
 ```bash
 export KUBECONFIG=~/.kube/config-kubeforge
 # TROQUE o host pelo SEU (o do DDNS do LAB 01):
-helm install whoami charts/whoami --set ingress.host=$KUBEFORGE_HOST
+helm install whoami $CHART --set ingress.host=$KUBEFORGE_HOST
 helm list                                  # release 'whoami' STATUS=deployed
 kubectl get deploy,svc,ingress -l app.kubernetes.io/instance=whoami
 ```
@@ -137,7 +139,7 @@ kubectl get deploy,svc,ingress -l app.kubernetes.io/instance=whoami
 
 Suba de 2 para 3 réplicas — o superpoder do `values`:
 ```bash
-helm upgrade whoami charts/whoami \
+helm upgrade whoami $CHART \
   --set ingress.host=$KUBEFORGE_HOST \
   --set replicaCount=3
 kubectl get pods -l app.kubernetes.io/instance=whoami   # agora 3 pods
@@ -159,14 +161,13 @@ helm history whoami                         # revisão 3 = rollback registrado
 - Ciclo `install → upgrade → rollback` exercitado (histórico com ≥ 2 revisões).
 - App servido no mesmo HTTPS do LAB 02 (o chart reusa o Ingress+TLS).
 
-## 10. Validar automaticamente
+## 10. Prática guiada e validação automática (no Girus)
 
-```bash
-export KUBECONFIG=~/.kube/config-kubeforge
-./tests/verify.sh
-```
-Checa: release `deployed`, Deployment com as réplicas do `values` prontas, Service existe,
-label `managed-by=Helm`, e histórico com upgrade (revisão ≥ 2). 🎉 se tudo passar.
+A validação automática deste conteúdo agora vive no **lab interativo de Helm da
+plataforma Girus** — [`platform/girus-on-k3s/labs/lab-helm.yaml`](../platform/girus-on-k3s/labs/lab-helm.yaml).
+Lá o aluno exercita `helm create → install → upgrade → rollback → uninstall` no
+terminal do browser e cada tarefa é validada na hora (✅/❌), sem precisar de
+`verify.sh` local. Este documento é a referência teórica; o Girus é a prática.
 
 ## Limpeza
 

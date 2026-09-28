@@ -85,6 +85,6 @@ Aplicar (exemplos):
   kubectl apply -f platform/girus-on-k3s/02-girus-ingress.rendered.yaml
   kubectl apply -f lab-02/manifests/03-whoami-ingress.rendered.yaml
 
-Helm (LAB 03) — passe o host direto, sem placeholder:
-  helm install whoami lab-03/charts/whoami --set ingress.host=$HOST
+Helm (doc/exemplo) — passe o host direto, sem placeholder:
+  helm install whoami docs/examples/helm-whoami-chart --set ingress.host=$HOST
 EOF

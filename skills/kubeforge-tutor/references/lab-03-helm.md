@@ -1,10 +1,11 @@
-# Guia de ensino — LAB 03: Helm (empacotamento)
+# Guia de ensino — Helm (empacotamento)
 
-README do lab: `~/git/KubeForge/lab-03/README.md`
+Doc de referência: `~/git/KubeForge/docs/helm.md`
+Lab interativo (prática + validação): `~/git/KubeForge/platform/girus-on-k3s/labs/lab-helm.yaml` (no Girus)
 
 ## Recurso visual de abertura
 
-Antes de digitar, mostre o infográfico `lab-03/docs/images/helm-overview.png` — ele resume
+Antes de digitar, mostre o infográfico `docs/images/helm-overview.png` — ele resume
 os 3 pilares (Chart/Repository/Release), a arquitetura (Helm Client + Library em Go + estado
 em Secrets) e o que o Helm permite. Use-o para ancorar o vocabulário antes do hands-on.
 

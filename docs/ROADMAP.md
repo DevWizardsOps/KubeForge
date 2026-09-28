@@ -56,7 +56,7 @@ dependência (empacotar → versionar por ambiente → automatizar → operar):
 
 | Lab | Tema | Estado |
 |---|---|---|
-| **LAB 03** | **Helm** (empacotamento) | ✅ pronto |
+| **Helm** | empacotamento — **migrado para lab interativo no Girus** (`platform/girus-on-k3s/labs/lab-helm.yaml`); teoria em `docs/helm.md` | ✅ pronto |
 | LAB 04 | Kustomize (overlays sem template) | planejado |
 | LAB 05 | ArgoCD / Flux (GitOps) | planejado |
 | LAB 06+ | Gerenciamento de Segredos (Sealed Secrets / Vault) | planejado |

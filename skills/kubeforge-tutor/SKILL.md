@@ -68,18 +68,22 @@ Para QUALQUER lab, siga esta ordem — é o que faz o conceito "colar":
 | ConfigMaps e Secrets | config, dados sensíveis, volumes, TLS | `lab-configmaps-secrets.yaml` |
 | CronJobs | agendamento, ciclo de vida, Jobs | `lab-cronjobs.yaml` |
 | Exploração de Recursos | namespaces, troubleshooting, limpeza | `lab-exploracao-recursos.yaml` |
+| Helm | empacotamento: chart, install/upgrade/rollback | `lab-helm.yaml` (teoria: `docs/helm.md`) |
 
 > **Ao EDITAR um lab Girus**, leia primeiro a seção "Autoria de labs Girus" em
 > `references/gotchas.md` — o painel de Tarefas tem regras de render e validação
 > não óbvias que reprovam labs corretos se ignoradas.
 
-**Fase 2 — Labs numerados** (entrega de software; agnósticos de provedor):
+**Infra de plataforma — Labs numerados** (sobem o cluster e o HTTPS onde o Girus roda):
 
 | Lab | Tema | README | Guia de ensino |
 |-----|------|--------|----------------|
 | 01 | AWS Academy + k3s ARM64 | `~/git/KubeForge/lab-01/README.md` | `references/lab-01-aws.md` |
 | 02 | Certificado TLS (cert-manager + Let's Encrypt) | `~/git/KubeForge/lab-02/README.md` | `references/lab-02-tls.md` |
-| 03 | Helm (empacotamento) | `~/git/KubeForge/lab-03/README.md` | `references/lab-03-helm.md` |
+
+> Helm deixou de ser lab numerado (era LAB 03): virou lab interativo no Girus
+> (`lab-helm.yaml`); a teoria/anatomia do chart está em `docs/helm.md` e o guia de
+> ensino em `references/lab-03-helm.md`.
 
 > Esta tabela cresce conforme novos labs são feitos. Ao concluir um lab novo,
 > adicione a linha aqui E crie o `references/lab-NN-*.md` correspondente.

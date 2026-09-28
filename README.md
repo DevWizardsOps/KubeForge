@@ -24,16 +24,18 @@ plane (k3s roda nas próprias EC2), <US$1/sessão de crédito do Learner Lab.
 ```text
 lab-01/     Fundação — AWS Academy + k3s ARM64 (Terraform + DDNS)
 lab-02/     Certificado TLS (cert-manager + Let's Encrypt) — provedor-agnóstico
-lab-03/     Helm (empacotamento) — chart do whoami, install/upgrade/rollback
 lab-NN/     Kubernetes padrão (agnóstico de provedor)
-platform/   Plataforma da Fase 1 — GIRUS on k3s (aprendizado interativo de k8s)
-docs/       ROADMAP e documentação de referência
+platform/   Plataforma da Fase 1+2 — GIRUS on k3s (labs interativos de k8s)
+docs/       ROADMAP, documentação de referência (ex.: docs/helm.md) e exemplos
 skills/     Skill-tutor da trilha (ensino)
 ```
 
 ➡️ **[LAB 02 — Certificado TLS (cert-manager + Let's Encrypt)](lab-02/README.md)** — HTTPS
 válido no hostname DDNS.
-➡️ **[LAB 03 — Helm (empacotamento)](lab-03/README.md)** — empacota o whoami como chart.
+
+> **Helm** deixou de ser um lab numerado: virou **lab interativo no Girus**
+> ([`platform/girus-on-k3s/labs/lab-helm.yaml`](platform/girus-on-k3s/labs/lab-helm.yaml)),
+> com a teoria de referência em [`docs/helm.md`](docs/helm.md).
 
 ## Fase 1 — Labs Girus (aprendizado interativo de k8s)
 
