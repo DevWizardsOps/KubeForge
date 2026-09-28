@@ -5,9 +5,10 @@ em vez do Kind local que o CLI oficial cria. É a base da **Fase 1** da trilha
 (aprender os primitivos do Kubernetes de forma interativa, com terminal no
 browser e validação automática). Ver [`docs/ROADMAP.md`](../../docs/ROADMAP.md).
 
-> **Não é um lab da trilha** — é a *plataforma* onde os labs de fundamentos de
-> k8s rodam. Os labs numerados (`lab-01`, `lab-02`, `lab-03`...) são a **Fase 2**
-> (entrega de software: Helm, GitOps, etc.).
+> **Não é um lab da trilha** — é a *plataforma* onde os labs de Kubernetes rodam
+> (fundamentos **e** entrega de software: Helm, e futuramente GitOps etc.). Os
+> labs numerados que sobraram (`lab-01`, `lab-02`) são só a **infra de plataforma**
+> que sobe o cluster e o HTTPS onde o Girus roda.
 
 ## Pré-requisitos
 
@@ -79,8 +80,8 @@ kubectl -n girus get secret girus-auth-password -o jsonpath='{.data.password}' |
 ## Carregar os labs de fundamentos
 
 Os labs do Girus são **ConfigMaps** (`kind: ConfigMap` com o `lab.yaml` dentro),
-e os nossos vivem em [`labs/`](labs/). A Fase 1 tem **5 labs** selecionados e
-adaptados do original (Kind local) para o nosso k3s ARM64, validados no cluster real:
+e os nossos vivem em [`labs/`](labs/). São **6 labs** adaptados/criados para o
+nosso k3s ARM64 e validados no cluster real:
 
 | # | Arquivo | Tema |
 |---|---------|------|
@@ -89,17 +90,23 @@ adaptados do original (Kind local) para o nosso k3s ARM64, validados no cluster 
 | 3 | `labs/lab-configmaps-secrets.yaml` | ConfigMaps e Secrets — config, dados sensíveis, volumes, TLS |
 | 4 | `labs/lab-cronjobs.yaml` | CronJobs — agendamento, ciclo de vida, Jobs |
 | 5 | `labs/lab-exploracao-recursos.yaml` | Exploração — namespaces, troubleshooting, limpeza seletiva |
+| 6 | `labs/lab-helm.yaml` | Helm — empacotamento: chart, install/upgrade/rollback (teoria em [`docs/helm.md`](../../docs/helm.md)) |
 
-Aplicar um lab e recarregar o backend:
+**Suba todos os labs de uma vez** (o `-f labs/` aplica o diretório inteiro) e
+recarregue o backend para ele detectá-los:
 
 ```bash
 export KUBECONFIG=~/.kube/config-kubeforge
-kubectl apply -f labs/lab-deployment.yaml            # (ou o lab desejado)
+kubectl apply -f labs/                                # sobe TODOS os labs de uma vez
 kubectl -n girus rollout restart deployment/girus-backend
 kubectl -n girus rollout status  deployment/girus-backend --timeout=90s
 ```
 
-> Depois de reaplicar um lab, **inicie uma sessão nova** dele na UI — o Girus
+Depois disso, os 6 labs aparecem na UI do Girus e você vai fazendo cada um pela
+plataforma. Para **reaplicar um lab** que você editou, aplique só ele
+(`kubectl apply -f labs/lab-helm.yaml`) + o mesmo `rollout restart`.
+
+> Depois de (re)aplicar labs, **inicie uma sessão nova** do lab na UI — o Girus
 > tira um snapshot da validação no início da sessão; recarregar a aba não atualiza
 > uma sessão já em andamento.
 

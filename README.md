@@ -37,7 +37,7 @@ válido no hostname DDNS.
 cluster (LAB 01) e o HTTPS (LAB 02) no ar, você sobe o Girus, onde todos os labs de
 Kubernetes rodam de forma interativa (terminal no browser + validação automática).
 
-## Fase 1 — Labs Girus (aprendizado interativo de k8s)
+## Labs Girus (aprendizado interativo de k8s)
 
 Rodam dentro da **plataforma GIRUS** (LINUXtips, GPL-3.0), com terminal no browser
 e validação automática. Subir a plataforma: [`platform/girus-on-k3s/README.md`](platform/girus-on-k3s/README.md).
@@ -49,10 +49,11 @@ e validação automática. Subir a plataforma: [`platform/girus-on-k3s/README.md
 | 3 | ConfigMaps e Secrets | Configurações, dados sensíveis, volumes, TLS |
 | 4 | CronJobs | Agendamento, ciclo de vida, monitoramento de Jobs |
 | 5 | Exploração de Recursos | Namespaces, troubleshooting, limpeza seletiva |
+| 6 | Helm | Empacotamento: chart, install/upgrade/rollback (teoria em [`docs/helm.md`](docs/helm.md)) |
 
 Os labs vivem em `platform/girus-on-k3s/labs/*.yaml` (ConfigMaps que o backend
-do Girus detecta). Foram adaptados do original (Kind local) para o nosso k3s
-ARM64 e validados no cluster real.
+do Girus detecta). Suba todos de uma vez com `kubectl apply -f labs/` (ver o
+README da plataforma) e vá fazendo cada um pela UI do Girus.
 
 ## Validação dos labs (check scripts)
 
