@@ -158,6 +158,11 @@ rules:
   - apiGroups: ["networking.k8s.io"]
     resources: ["ingresses", "networkpolicies"]
     verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+  # EndpointSlices (discovery.k8s.io) — recurso ATUAL de endpoints em k8s 1.33+
+  # (o 'endpoints' legado ainda é concedido acima, mas a validação usa endpointslices)
+  - apiGroups: ["discovery.k8s.io"]
+    resources: ["endpointslices"]
+    verbs: ["get", "list", "watch"]
   # RBAC NAMESPACED (roles/rolebindings dentro dos namespaces de lab) — NÃO cluster-scope
   - apiGroups: ["rbac.authorization.k8s.io"]
     resources: ["roles", "rolebindings"]
