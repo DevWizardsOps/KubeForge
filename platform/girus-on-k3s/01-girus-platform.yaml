@@ -148,7 +148,7 @@ rules:
     verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
   # Workloads
   - apiGroups: ["apps"]
-    resources: ["deployments", "replicasets", "statefulsets", "daemonsets"]
+    resources: ["deployments", "replicasets", "statefulsets", "daemonsets", "deployments/scale", "replicasets/scale", "statefulsets/scale"]
     verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
   # Jobs e CronJobs (lab de cronjobs)
   - apiGroups: ["batch"]
