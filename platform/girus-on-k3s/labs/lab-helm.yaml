@@ -1,0 +1,143 @@
+# ============================================================================
+# Lab GIRUS — Helm no Kubernetes  (KubeForge, Fase 2 — entrega de software)
+# ============================================================================
+# ORIGEM: conteudo proprio do KubeForge (Marcelo Wanderley Lima). O material
+#         didatico de referencia (chart whoami, conceitos) vive em docs/helm.md.
+#
+# Roda no nosso k3s ARM64 via a plataforma GIRUS. A imagem do ambiente do aluno
+# (alpine/k8s:1.33.1) traz helm + kubectl. A validacao roda como a SA restrita
+# lab-test-user:default; o ClusterRole girus-lab-operator ja concede
+# create/get/list/delete de deployments/services/configmaps/secrets/pods, que e
+# tudo que 'helm install' precisa (o Helm guarda o release como Secret no ns).
+# ============================================================================
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: kubernetes-helm-lab
+  namespace: girus
+  labels:
+    app: girus-lab-template
+data:
+  lab.yaml: |
+    name: kubernetes-helm
+    title: "Lab Helm — Empacotando aplicações no Kubernetes"
+    description: "Aprenda o gerenciador de pacotes do Kubernetes. Você vai empacotar uma aplicação como um chart, instalar um release, atualizar valores sem reescrever YAML, consultar o histórico e reverter com um comando — o ciclo de vida que o kubectl apply de YAML solto não entrega."
+    duration: 30m
+    image: "alpine/k8s:1.33.1"
+    tasks:
+      - name: "Conceitos: por que Helm e não kubectl apply"
+        description: "Entenda o que o Helm resolve e confirme que a ferramenta está disponível no ambiente."
+        steps:
+          - "O Helm é o gerenciador de pacotes do Kubernetes — o equivalente ao apt/yum/brew, mas para aplicações no cluster."
+          - "Três pilares do Helm:"
+          - "- Chart: o pacote (um template + valores), equivalente a um .deb ou uma fórmula do Homebrew."
+          - "- Repository: onde charts são compartilhados (ex: Artifact Hub)."
+          - "- Release: uma instância do chart rodando no cluster. O mesmo chart pode virar N releases independentes."
+          - "O que o Helm entrega que o kubectl apply de YAML solto não dá:"
+          - "- Um template + valores por ambiente, em vez de copiar e editar YAML fixo."
+          - "- Chart versionado (SemVer) e histórico de releases."
+          - "- Rollback em um comando, em vez de reverter YAML à mão."
+          - "- O release agrupa todos os objetos da aplicação (Deployment, Service, etc.)."
+          - "No Helm 3 não há Tiller: o estado de cada release é guardado em Secrets nativos do cluster."
+          - "Confirme que o Helm está disponível no ambiente:"
+          - "`helm version --short`"
+        tips:
+          - type: "info"
+            title: "Onde fica o estado do release"
+            content: "O Helm 3 guarda cada release como um Secret no namespace (kubectl get secret -l owner=helm). Sem banco de dados próprio, sem componente extra no cluster."
+        validation:
+          - command: "helm version --short 2>/dev/null | grep -qiE 'v[0-9]' && echo ok || echo fail"
+            expectedOutput: "ok"
+            errorMessage: "O Helm não está disponível no ambiente. Rode helm version --short para verificar."
+
+      - name: "Criar e renderizar um chart"
+        description: "Gere um chart inicial e veja o YAML que ele produz, antes de tocar no cluster."
+        steps:
+          - "O comando helm create gera um chart inicial completo e funcional (um app nginx de exemplo), com a estrutura padrão: Chart.yaml (metadados), values.yaml (os botões) e templates/ (os moldes)."
+          - "1. Gere o chart demo:"
+          - "`helm create demo`"
+          - "2. Veja a estrutura criada:"
+          - "`ls -R demo`"
+          - "3. Valide o chart (checa erros de sintaxe e boas práticas):"
+          - "`helm lint demo`"
+          - "4. Renderize os manifests SEM aplicar no cluster — é o dry-run do Helm, mostra o YAML que o chart geraria:"
+          - "`helm template demo demo`"
+          - "Repare que replicas, image e labels no YAML renderizado vêm do values.yaml. É a diferença do Helm para YAML solto: um molde, N configurações."
+        tips:
+          - type: "tip"
+            title: "template vs install"
+            content: "helm template renderiza localmente e imprime o YAML (não fala com o cluster). helm install renderiza E aplica. Use template para revisar antes de instalar."
+        validation:
+          - command: "test -f demo/Chart.yaml && test -f demo/values.yaml && echo ok || echo fail"
+            expectedOutput: "ok"
+            errorMessage: "O chart demo não foi criado. Rode helm create demo."
+
+      - name: "Instalar um release"
+        description: "Instale o chart como um release no cluster e inspecione os objetos que ele criou."
+        steps:
+          - "Instalar o chart cria um release: uma instância viva do chart no cluster, com todos os seus objetos agrupados sob um nome."
+          - "1. Instale o chart demo como o release demo, com 1 réplica (o --wait espera os pods ficarem prontos):"
+          - "`helm install demo demo --set replicaCount=1 --wait --timeout 60s`"
+          - "2. Liste os releases — o demo deve aparecer com STATUS deployed:"
+          - "`helm list`"
+          - "3. Veja os objetos que o release criou (Deployment, Service, etc.) pela label de instância:"
+          - "`kubectl get deploy,svc -l app.kubernetes.io/instance=demo`"
+          - "Repare que todos os objetos carregam a label app.kubernetes.io/managed-by=Helm — foi o Helm que os criou e é ele quem os gerencia."
+        tips:
+          - type: "warning"
+            title: "Helm não adota objetos alheios"
+            content: "Se um objeto com o mesmo nome já existir (criado antes com kubectl apply), o helm install recusa com 'invalid ownership metadata'. O Helm só gerencia o que ele mesmo criou."
+        validation:
+          - command: "helm status demo 2>/dev/null | grep -qi 'STATUS: deployed' && echo ok || echo fail"
+            expectedOutput: "ok"
+            errorMessage: "O release demo não está com STATUS deployed. Rode helm install demo demo --set replicaCount=1 --wait."
+          - command: "kubectl get deployment demo -o jsonpath='{.spec.replicas}' 2>/dev/null || echo ''"
+            expectedOutput: "1"
+            errorMessage: "O Deployment demo não foi criado com 1 réplica pelo release."
+
+      - name: "Upgrade e rollback"
+        description: "Atualize valores sem reescrever YAML e reverta com um comando — o superpoder do Helm."
+        steps:
+          - "Agora o ciclo de vida que o YAML solto não entrega: mudar um valor e, se preciso, voltar atrás."
+          - "1. Suba de 1 para 3 réplicas apenas mudando o valor (sem editar nenhum YAML à mão):"
+          - "`helm upgrade demo demo --set replicaCount=3 --wait --timeout 60s`"
+          - "2. Confirme que agora há 3 réplicas:"
+          - "`kubectl get deployment demo -o jsonpath='{.spec.replicas}'`"
+          - "3. Veja o histórico do release — deve ter a revisão 1 (install) e a 2 (upgrade):"
+          - "`helm history demo`"
+          - "4. Reverta para a revisão 1 (volta a 1 réplica) — algo que com YAML solto você faria na mão:"
+          - "`helm rollback demo 1 --wait --timeout 60s`"
+          - "5. Confirme que voltou para 1 réplica:"
+          - "`kubectl get deployment demo -o jsonpath='{.spec.replicas}'`"
+          - "O rollback também vira uma revisão no histórico (revisão 3), preservando a rastreabilidade."
+        tips:
+          - type: "info"
+            title: "Valores entre comandos"
+            content: "Cada helm upgrade parte dos valores do chart, não do release anterior. Para preservar valores já aplicados, use --reuse-values ou passe todos os --set/-f de novo."
+        validation:
+          - command: "kubectl get deployment demo -o jsonpath='{.spec.replicas}' 2>/dev/null || echo ''"
+            expectedOutput: "1"
+            errorMessage: "Após o rollback para a revisão 1, o Deployment demo deveria ter 1 réplica."
+          - command: "helm history demo 2>/dev/null | awk 'END{print NR-1}' | grep -qE '^[3-9]$|^[1-9][0-9]+$' && echo ok || echo fail"
+            expectedOutput: "ok"
+            errorMessage: "O histórico do release deveria ter ao menos 3 revisões (install, upgrade, rollback). Rode os passos de upgrade e rollback."
+
+      - name: "Limpeza dos Recursos"
+        description: "Remova o release e entenda como o Helm limpa todos os objetos de uma vez."
+        steps:
+          - "Ao contrário de apagar objeto por objeto, o Helm remove tudo que o release criou de uma só vez."
+          - "1. Desinstale o release demo (remove Deployment, Service e todos os objetos do release):"
+          - "`helm uninstall demo`"
+          - "2. Confirme que o release sumiu:"
+          - "`helm list`"
+          - "3. Confirme que os objetos foram removidos:"
+          - "`kubectl get deploy,svc -l app.kubernetes.io/instance=demo`"
+          - "Você deve ver No resources found — o ambiente está limpo. Este é o ciclo completo do Helm: empacotar, instalar, atualizar, reverter e remover."
+        tips:
+          - type: "tip"
+            title: "uninstall e histórico"
+            content: "Por padrão o uninstall remove também o histórico do release. Use helm uninstall demo --keep-history se quiser manter o histórico para auditoria."
+        validation:
+          - command: "helm status demo >/dev/null 2>&1 && echo existe || echo 'not found'"
+            expectedOutput: "not found"
+            errorMessage: "O release demo ainda existe. Rode helm uninstall demo."
