@@ -133,8 +133,6 @@ data:
           - "kubectl create configmap nginx-config -n challenge-namespace --from-literal=index.html=desafio-ok"
           - "Modifique o deployment para montar o ConfigMap como um volume em /usr/share/nginx/html/"
           - "Verifique se a configuração foi aplicada corretamente."
-          - "Limpeza (ao concluir o desafio): remova o namespace para deixar o cluster limpo:"
-          - "kubectl delete namespace challenge-namespace"
         tips:
           - type: "warning"
             title: "Volumes e montagens"
@@ -152,3 +150,22 @@ data:
           - command: "kubectl get deployment nginx-deployment -n challenge-namespace -o jsonpath='{.spec.template.spec.containers[0].volumeMounts[0].mountPath}' 2>/dev/null || echo ''"
             expectedOutput: "/usr/share/nginx/html/"
             errorMessage: "O volume do ConfigMap não está montado em '/usr/share/nginx/html/' no container."
+
+      - name: "Desafio 5: Limpeza do ambiente"
+        description: "Remova os recursos criados para devolver o cluster limpo"
+        steps:
+          - "Boa prática: ao concluir um trabalho no cluster, remova o que você criou."
+          - "Remova o namespace 'challenge-namespace' (isso apaga o Deployment, o Service e o ConfigMap de uma vez):"
+          - "kubectl delete namespace challenge-namespace"
+          - "Aguarde a remoção terminar e verifique que o namespace não existe mais."
+        tips:
+          - type: "info"
+            title: "Por que limpar"
+            content: "Deletar o namespace remove em cascata todos os recursos dentro dele (Deployment, Service, ConfigMap). É a forma mais limpa de encerrar o exercício."
+          - type: "warning"
+            title: "A remoção é assíncrona"
+            content: "O 'kubectl delete namespace' pode levar alguns segundos (estado Terminating). Se o VERIFICAR falhar logo após, aguarde a remoção concluir e tente de novo."
+        validation:
+          - command: "kubectl get namespace challenge-namespace -o name 2>/dev/null || echo 'removido'"
+            expectedOutput: "removido"
+            errorMessage: "O namespace 'challenge-namespace' ainda existe. Execute 'kubectl delete namespace challenge-namespace' e aguarde a remoção concluir."
