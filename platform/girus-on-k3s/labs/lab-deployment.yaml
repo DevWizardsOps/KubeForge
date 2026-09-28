@@ -128,7 +128,9 @@ data:
           - "Crie um ConfigMap com as seguintes características:"
           - "- Nome: nginx-config"
           - "- Namespace: challenge-namespace"
-          - "- Deve conter uma chave 'index.html' com valor '<html><body><h1>Desafio OK</h1></body></html>'"
+          - "- Deve conter uma chave 'index.html' com o valor exato: desafio-ok"
+          - "Dica: crie de forma imperativa (evita YAML multi-linha e acentos):"
+          - "kubectl create configmap nginx-config -n challenge-namespace --from-literal=index.html=desafio-ok"
           - "Modifique o deployment para montar o ConfigMap como um volume em /usr/share/nginx/html/"
           - "Verifique se a configuração foi aplicada corretamente."
         tips:
@@ -140,7 +142,7 @@ data:
             content: "A validação verificará se o ConfigMap existe e se está montado corretamente no deployment."
         validation:
           - command: "kubectl get configmap nginx-config -n challenge-namespace -o jsonpath='{.data[\"index.html\"]}' 2>/dev/null || echo ''"
-            expectedOutput: "<html><body><h1>Desafio OK</h1></body></html>"
+            expectedOutput: "desafio-ok"
             errorMessage: "O ConfigMap 'nginx-config' não foi criado corretamente ou não contém a chave 'index.html' com o valor esperado."
           - command: "kubectl get deployment nginx-deployment -n challenge-namespace -o jsonpath='{.spec.template.spec.volumes[?(@.name==\"config-volume\")].configMap.name}' 2>/dev/null || echo ''"
             expectedOutput: "nginx-config"
