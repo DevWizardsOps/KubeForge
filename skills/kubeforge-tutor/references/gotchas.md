@@ -45,6 +45,46 @@ cura**. É o material mais valioso pra ensinar (o erro é onde se aprende).
 | cert não emite após o helm install | esqueceu `--set ingress.host=<seu>` → Ingress ficou com o placeholder sentinela `__KUBEFORGE_HOST__` | reinstale/atualize passando o SEU host |
 | `Error: release: not found` no rollback | nome do release errado (confundiu com nome do chart) | `helm list` para achar o release; `helm install <release> <chart>` |
 
+## Autoria de labs Girus (para quem EDITA os `platform/girus-on-k3s/labs/*.yaml`)
+
+Estas armadilhas **reprovam labs corretos** ou quebram o painel — descobertas
+depurando os 5 labs no cluster real. O comando funciona no seu terminal (admin)
+mas falha no lab: quase sempre é uma destas.
+
+### Render do painel de Tarefas
+
+| Sintoma | Causa | Cura |
+|---|---|---|
+| nome/palavra em negrito ou crase vira um "chip" copiável solto no meio do texto | o Girus renderiza **qualquer** destaque inline (`**x**` E `` `x` ``) como chip; não existe destaque inline | texto explicativo = **texto puro** (zero `**`, zero `` ` ``); crase/negrito **só** em item que é um comando inteiro pra copiar |
+| bloco de código multi-linha (```` ``` ````) aparece quebrado, sem botão copiar | cada item do array `steps` é um parágrafo isolado; o fence não engloba os itens seguintes | comando copiável = **uma linha** entre crases, sem `\n`. Para criar objeto, use comando **imperativo** (`kubectl create/run/expose`), nunca YAML colado nem `printf` com `\n` |
+| item `- \`campo\`: explicação` mostra só o `campo`, a explicação some | o chip come o resto do item | use texto puro: `- campo: explicação` |
+
+### Validação (roda no backend, como a SA do aluno)
+
+| Sintoma | Causa | Cura |
+|---|---|---|
+| validação reprova com o comando "certo" (dá o valor certo no seu terminal) | o backend roda a validação **dentro do pod do aluno**, como a SA restrita `lab-test-user:default` — não como admin. Recurso sem RBAC → `Forbidden` engolido por `2>/dev/null` → saída vazia | todo recurso lido pela validação precisa estar no ClusterRole `girus-lab-operator` (`kubectl auth can-i <verbo> <rec> --as=system:serviceaccount:lab-test-user:default`) |
+| `Esperado: 'X' / Recebido: '<linha inteira>'` mesmo contendo X | o Girus compara **igualdade exata (`==`)**, NÃO `Contains` | o comando tem de emitir **exatamente** o `expectedOutput`: `... | grep -qi 'X' && echo 'X' || echo fail` (nunca `grep -i 'X'`, que emite a linha toda) |
+| `Esperado: '' / Recebido: '...'` sempre reprova | usou `expectedExpression` — **não é suportado** neste backend (esperado vira vazio) | use só `expectedOutput` |
+| diagnóstico definitivo | — | `kubectl -n girus logs -l app=girus-backend` na hora do VERIFICAR mostra "Comando final", stdout e "Esperado/Recebido" |
+
+### Ambiente do terminal (imagem `alpine/k8s:1.33.1` = Alpine 3.21 / BusyBox)
+
+| Sintoma | Causa | Cura |
+|---|---|---|
+| `base64: unrecognized option: decode` | BusyBox não tem a forma longa GNU | use `base64 -d` (não `--decode`) |
+| `openssl: command not found` | não vem pré-instalado | `apk add --no-cache openssl` primeiro (a imagem tem `apk` e rede) |
+| `unknown flag: --add` em `kubectl set volumes` | removido no kubectl 1.33 | `kubectl patch --type=json` |
+| YAML colado no `vi` perde a indentação | terminal web não preserva espaços à esquerda | não peça pra digitar YAML; use comando imperativo |
+
+### Estrutura / ciclo de vida
+
+| Sintoma | Causa | Cura |
+|---|---|---|
+| `create ... already exists` quando o aluno repete um passo | comandos de criação não são idempotentes | `kubectl create ... --dry-run=client -o yaml | kubectl apply -f -`; deletes com `--ignore-not-found` |
+| lab não "finaliza"/PRÓXIMA fica cinza mesmo com VERIFICAR ok | falta uma **task de Limpeza dedicada** como última | toda trilha de lab termina numa task "Limpeza dos Recursos" (padrão dos 5 labs) |
+| mudança no `.yaml` não pega | backend cacheia labs no boot; sessão snapshota validação no início | `kubectl apply -f labs/X.yaml` + `rollout restart deployment/girus-backend` + **sessão nova** do lab |
+
 ## Gerais (KiroCrew / git)
 
 | Sintoma | Causa | Cura |

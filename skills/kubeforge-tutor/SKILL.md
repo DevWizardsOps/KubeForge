@@ -59,6 +59,22 @@ Para QUALQUER lab, siga esta ordem — é o que faz o conceito "colar":
 
 ## Índice de labs (aponte para o README e a referência didática)
 
+**Fase 1 — Labs Girus** (plataforma interativa; arquivos em `~/git/KubeForge/platform/girus-on-k3s/labs/`):
+
+| Lab Girus | Tema | Arquivo |
+|-----------|------|---------|
+| Deployments | criar/escalar/atualizar/rollback | `lab-deployment.yaml` |
+| Services e Redes | ClusterIP, NodePort, EndpointSlice, proxy | `lab-services-redes.yaml` |
+| ConfigMaps e Secrets | config, dados sensíveis, volumes, TLS | `lab-configmaps-secrets.yaml` |
+| CronJobs | agendamento, ciclo de vida, Jobs | `lab-cronjobs.yaml` |
+| Exploração de Recursos | namespaces, troubleshooting, limpeza | `lab-exploracao-recursos.yaml` |
+
+> **Ao EDITAR um lab Girus**, leia primeiro a seção "Autoria de labs Girus" em
+> `references/gotchas.md` — o painel de Tarefas tem regras de render e validação
+> não óbvias que reprovam labs corretos se ignoradas.
+
+**Fase 2 — Labs numerados** (entrega de software; agnósticos de provedor):
+
 | Lab | Tema | README | Guia de ensino |
 |-----|------|--------|----------------|
 | 01 | AWS Academy + k3s ARM64 | `~/git/KubeForge/lab-01/README.md` | `references/lab-01-aws.md` |

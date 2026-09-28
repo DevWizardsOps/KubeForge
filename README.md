@@ -35,6 +35,23 @@ skills/     Skill-tutor da trilha (ensino)
 válido no hostname DDNS.
 ➡️ **[LAB 03 — Helm (empacotamento)](lab-03/README.md)** — empacota o whoami como chart.
 
+## Fase 1 — Labs Girus (aprendizado interativo de k8s)
+
+Rodam dentro da **plataforma GIRUS** (LINUXtips, GPL-3.0), com terminal no browser
+e validação automática. Subir a plataforma: [`platform/girus-on-k3s/README.md`](platform/girus-on-k3s/README.md).
+
+| # | Lab Girus | Tema |
+|---|-----------|------|
+| 1 | Deployments | Criar, escalar, atualizar e fazer rollback de Deployments |
+| 2 | Services e Redes | ClusterIP, NodePort, EndpointSlice, proxy reverso |
+| 3 | ConfigMaps e Secrets | Configurações, dados sensíveis, volumes, TLS |
+| 4 | CronJobs | Agendamento, ciclo de vida, monitoramento de Jobs |
+| 5 | Exploração de Recursos | Namespaces, troubleshooting, limpeza seletiva |
+
+Os labs vivem em `platform/girus-on-k3s/labs/*.yaml` (ConfigMaps que o backend
+do Girus detecta). Foram adaptados do original (Kind local) para o nosso k3s
+ARM64 e validados no cluster real.
+
 ## Validação dos labs (check scripts)
 
 Cada lab traz um **`tests/verify.sh`** que checa o estado real do cluster e diz na hora

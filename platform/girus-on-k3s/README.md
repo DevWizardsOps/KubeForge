@@ -78,21 +78,34 @@ kubectl -n girus get secret girus-auth-password -o jsonpath='{.data.password}' |
 
 ## Carregar os labs de fundamentos
 
-Os labs do Girus são **ConfigMaps** (`kind: ConfigMap` com o `lab.yaml` dentro).
-A trilha de fundamentos de k8s do Girus inclui: Fundamentos, Deployment,
-Exploração de Recursos, Serviços e Redes, ConfigMaps e Secrets, CronJobs.
+Os labs do Girus são **ConfigMaps** (`kind: ConfigMap` com o `lab.yaml` dentro),
+e os nossos vivem em [`labs/`](labs/). A Fase 1 tem **5 labs** selecionados e
+adaptados do original (Kind local) para o nosso k3s ARM64, validados no cluster real:
 
-Duas formas de carregá-los:
+| # | Arquivo | Tema |
+|---|---------|------|
+| 1 | `labs/lab-deployment.yaml` | Deployments — criar, escalar, atualizar, rollback |
+| 2 | `labs/lab-services-redes.yaml` | Services e Redes — ClusterIP, NodePort, EndpointSlice, proxy |
+| 3 | `labs/lab-configmaps-secrets.yaml` | ConfigMaps e Secrets — config, dados sensíveis, volumes, TLS |
+| 4 | `labs/lab-cronjobs.yaml` | CronJobs — agendamento, ciclo de vida, Jobs |
+| 5 | `labs/lab-exploracao-recursos.yaml` | Exploração — namespaces, troubleshooting, limpeza seletiva |
 
-- **Via CLI do Girus** (na sua máquina, aponta para o cluster): `girus lab list` /
-  `girus lab start <lab>` — porém a CLI assume o Kind dela; use só se souber
-  apontar o kubeconfig para o k3s.
-- **Direto via kubectl** (recomendado aqui): aplique o ConfigMap do lab no
-  namespace `girus` e o backend o detecta. Os `lab.yaml` de fundamentos estão no
-  repo do Girus (`internal/templates/manifests/lab_4*_kubernetes_*.yaml`).
+Aplicar um lab e recarregar o backend:
 
-> Curadoria pendente: vamos selecionar QUAIS labs de fundamentos entram na Fase 1
-> (e em que ordem) — ver ROADMAP. Nem todo lab do Girus é de Kubernetes.
+```bash
+export KUBECONFIG=~/.kube/config-kubeforge
+kubectl apply -f labs/lab-deployment.yaml            # (ou o lab desejado)
+kubectl -n girus rollout restart deployment/girus-backend
+kubectl -n girus rollout status  deployment/girus-backend --timeout=90s
+```
+
+> Depois de reaplicar um lab, **inicie uma sessão nova** dele na UI — o Girus
+> tira um snapshot da validação no início da sessão; recarregar a aba não atualiza
+> uma sessão já em andamento.
+
+> **Editar labs:** as armadilhas de autoria (render do painel, validação por
+> igualdade exata, RBAC da SA do aluno, etc.) estão documentadas no tutor da
+> trilha, em [`skills/kubeforge-tutor/references/gotchas.md`](../../skills/kubeforge-tutor/references/gotchas.md).
 
 ## Segurança / RBAC — leia antes de usar
 
