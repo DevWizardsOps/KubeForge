@@ -81,7 +81,7 @@ data:
           - "Adicione uma anotação ao deployment: maintainer=devops-team"
           - "Dica (comandos de referência — uma linha cada, pode copiar):"
           - "`kubectl scale deployment nginx-deployment --replicas=4 -n challenge-namespace`"
-          - "`kubectl set image deployment/nginx-deployment nginx-deployment=nginx:1.21 -n challenge-namespace`"
+          - "`kubectl set image deployment/nginx-deployment '*'=nginx:1.21 -n challenge-namespace`"
           - "`kubectl annotate deployment nginx-deployment maintainer=devops-team -n challenge-namespace --overwrite`"
         tips:
           - type: "info"
