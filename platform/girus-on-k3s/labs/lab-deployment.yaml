@@ -30,7 +30,7 @@ data:
     title: "Lab 1 — Deployments no Kubernetes"
     description: "Neste desafio, você precisa demonstrar seu conhecimento prático de Deployments no Kubernetes, criando e gerenciando recursos conforme solicitado."
     duration: 15m
-    timerEnabled: true
+    timerEnabled: false
     maxDuration: 20m
     image: "alpine/k8s:1.33.1"
     tasks:
@@ -133,6 +133,8 @@ data:
           - "kubectl create configmap nginx-config -n challenge-namespace --from-literal=index.html=desafio-ok"
           - "Modifique o deployment para montar o ConfigMap como um volume em /usr/share/nginx/html/"
           - "Verifique se a configuração foi aplicada corretamente."
+          - "Limpeza (ao concluir o desafio): remova o namespace para deixar o cluster limpo:"
+          - "kubectl delete namespace challenge-namespace"
         tips:
           - type: "warning"
             title: "Volumes e montagens"
@@ -144,9 +146,9 @@ data:
           - command: "kubectl get configmap nginx-config -n challenge-namespace -o jsonpath='{.data.index\\.html}' 2>/dev/null || echo ''"
             expectedOutput: "desafio-ok"
             errorMessage: "O ConfigMap 'nginx-config' não foi criado corretamente ou não contém a chave 'index.html' com o valor esperado."
-          - command: "kubectl get deployment nginx-deployment -n challenge-namespace -o jsonpath='{.spec.template.spec.volumes[?(@.name==\"config-volume\")].configMap.name}' 2>/dev/null || echo ''"
+          - command: "kubectl get deployment nginx-deployment -n challenge-namespace -o jsonpath='{.spec.template.spec.volumes[0].configMap.name}' 2>/dev/null || echo ''"
             expectedOutput: "nginx-config"
             errorMessage: "O deployment não tem um volume configurado com o ConfigMap 'nginx-config'."
-          - command: "kubectl get deployment nginx-deployment -n challenge-namespace -o jsonpath='{.spec.template.spec.containers[0].volumeMounts[?(@.name==\"config-volume\")].mountPath}' 2>/dev/null || echo ''"
+          - command: "kubectl get deployment nginx-deployment -n challenge-namespace -o jsonpath='{.spec.template.spec.containers[0].volumeMounts[0].mountPath}' 2>/dev/null || echo ''"
             expectedOutput: "/usr/share/nginx/html/"
             errorMessage: "O volume do ConfigMap não está montado em '/usr/share/nginx/html/' no container."
