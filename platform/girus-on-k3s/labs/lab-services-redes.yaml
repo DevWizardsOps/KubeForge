@@ -23,7 +23,7 @@ metadata:
 data:
   lab.yaml: |
     name: kubernetes-servicos-redes
-    title: "Serviços e Redes no Kubernetes"
+    title: "Lab 2 — Serviços e Redes no Kubernetes"
     description: "Aprenda como expor aplicações executando em Pods e implementar a comunicação entre os componentes da sua aplicação usando os tipos de Serviços do Kubernetes. Este laboratório guiado explorará os conceitos fundamentais de redes no Kubernetes e como eles possibilitam a comunicação interna e externa às suas aplicações."
     duration: 30m
     image: "alpine/k8s:1.33.1"

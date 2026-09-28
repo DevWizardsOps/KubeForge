@@ -23,7 +23,7 @@ metadata:
 data:
   lab.yaml: |
     name: kubernetes-cronjobs
-    title: "Kubernetes: Automatizando Tarefas com CronJobs"
+    title: "Lab 4 — CronJobs no Kubernetes"
     description: "Aprenda a criar e gerenciar CronJobs no Kubernetes, agendando tarefas para execução automática em intervalos definidos. Neste laboratório guiado, você aprenderá o conceito de CronJobs, sua sintaxe de agendamento, como configurar políticas de retenção de histórico e monitorar suas execuções."
     duration: 30m
     image: "alpine/k8s:1.33.1"

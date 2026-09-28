@@ -23,7 +23,7 @@ metadata:
 data:
   lab.yaml: |
     name: kubernetes-exploracao-recursos
-    title: "Desafio: Explorando Recursos do Kubernetes com kubectl"
+    title: "Lab 5 — Explorando Recursos do Kubernetes com kubectl"
     description: "Neste desafio, você demonstrará suas habilidades na utilização do kubectl para gerenciar e inspecionar recursos em um cluster Kubernetes."
     duration: 15m
     timerEnabled: true

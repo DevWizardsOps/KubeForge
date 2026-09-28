@@ -27,7 +27,7 @@ metadata:
 data:
   lab.yaml: |
     name: kubernetes-deployment
-    title: "Desafio: Deployments no Kubernetes"
+    title: "Lab 1 — Deployments no Kubernetes"
     description: "Neste desafio, você precisa demonstrar seu conhecimento prático de Deployments no Kubernetes, criando e gerenciando recursos conforme solicitado."
     duration: 15m
     timerEnabled: true
