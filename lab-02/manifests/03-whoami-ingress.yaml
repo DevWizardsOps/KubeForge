@@ -4,10 +4,11 @@
 # cert para os hosts do bloco tls[] e guardá-lo no secret 'whoami-tls'.
 # O Traefik (Ingress Controller embutido no k3s) serve o app em HTTPS com esse cert.
 #
-# ⚠️ TROQUE:
-#   - kubeforge-mwl.ddnsgeek.com pelo SEU hostname (o mesmo do DDNS do LAB 01).
-#   - Comece com 'letsencrypt-prod'. Só troque para 'letsencrypt-prod' depois
-#     que o staging emitir com sucesso (READY=True no 'kubectl get certificate').
+# ⚠️ NÃO edite o host à mão. Este manifesto usa o placeholder '__KUBEFORGE_HOST__':
+#   defina KUBEFORGE_HOST (kubeforge.env, na raiz do repo) e rode ./configure.sh
+#   — ele gera 03-whoami-ingress.rendered.yaml com o SEU hostname (o do LAB 01).
+#   Comece validando o cert com o ClusterIssuer de staging; só use
+#   'letsencrypt-prod' após o staging emitir (READY=True em 'kubectl get certificate').
 ---
 apiVersion: networking.k8s.io/v1
 kind: Ingress
@@ -19,10 +20,10 @@ spec:
   ingressClassName: traefik
   tls:
     - hosts:
-        - kubeforge-mwl.ddnsgeek.com                        # <-- SEU hostname
+        - __KUBEFORGE_HOST__
       secretName: whoami-tls
   rules:
-    - host: kubeforge-mwl.ddnsgeek.com                      # <-- SEU hostname
+    - host: __KUBEFORGE_HOST__
       http:
         paths:
           - path: /

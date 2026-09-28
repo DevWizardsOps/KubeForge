@@ -36,7 +36,7 @@ Detalhe do porquê em [docs/referencia.md](docs/referencia.md#papéis-dos-nós-k
 - **AWS Details → Download PEM** → salve como `vockey.pem` (`chmod 400`).
 
 **2. Configurar o DDNS Dynu — OBRIGATÓRIO, ANTES do tfvars** → [guia do Dynu](docs/dynu-ddns/README.md).
-- Crie o hostname `kubeforge-<suas-iniciais>.ddnsgeek.com` no Dynu.
+- Crie o hostname do cluster no seu provedor de DDNS/DNS (ex.: `kubeforge-<suas-iniciais>.<seu-dominio>` — no Dynu, `ddnsgeek.com` é um domínio grátis). Esse hostname é o seu `KUBEFORGE_HOST`.
 - Gere a **IP Update Password** (não a senha da conta).
 
 > Por que obrigatório: o IP público muda a cada sessão de 4h; sem o hostname estável você
@@ -65,7 +65,7 @@ kubeconfig fica estável entre sessões — você reusa o mesmo quando o IP muda
 ```bash
 # o scp usa o IP/host do server (SSH); o endpoint do kubeconfig usa o HOSTNAME:
 scp -i vockey.pem ubuntu@<server_public_ip>:~/.kube/config ~/.kube/config-kubeforge
-sed -i '' 's#https://127.0.0.1:6443#https://kubeforge-<iniciais>.ddnsgeek.com:6443#' ~/.kube/config-kubeforge
+sed -i '' 's#https://127.0.0.1:6443#https://$KUBEFORGE_HOST:6443#' ~/.kube/config-kubeforge
 export KUBECONFIG=~/.kube/config-kubeforge
 kubectl get nodes -o wide   # N nós Ready, ARCH=arm64
 ```

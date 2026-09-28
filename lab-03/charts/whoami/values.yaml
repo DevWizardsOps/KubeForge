@@ -24,5 +24,9 @@ ingress:
   enabled: true
   className: traefik
   clusterIssuer: letsencrypt-prod
-  host: kubeforge-mwl.ddnsgeek.com   # <-- TROQUE pelo SEU hostname (o do DDNS do LAB 01)
+  # NÃO deixe o host fixo aqui: passe o SEU hostname no install/upgrade com
+  #   helm install whoami . --set ingress.host=$KUBEFORGE_HOST
+  # (KUBEFORGE_HOST = o hostname do LAB 01). O placeholder abaixo é só sentinela;
+  # o deploy falha de propósito se você esquecer o --set.
+  host: __KUBEFORGE_HOST__   # <-- passe via --set ingress.host=$KUBEFORGE_HOST
   tlsSecretName: whoami-tls

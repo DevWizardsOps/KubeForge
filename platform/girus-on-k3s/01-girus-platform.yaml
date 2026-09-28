@@ -93,6 +93,95 @@ roleRef:
   name: girus-role
   apiGroup: rbac.authorization.k8s.io
 ---
+# ============================================================================
+# RBAC do AMBIENTE DO ALUNO (pod-terminal do lab)
+# ----------------------------------------------------------------------------
+# O backend do Girus cria o pod de lab no namespace fixo 'lab-test-user' e o
+# roda como a ServiceAccount 'default' desse namespace. Para o aluno EXECUTAR
+# os exercícios (criar namespaces, deployments, services, configmaps, secrets,
+# jobs...) essa SA precisa de permissão.
+#
+# O Girus UPSTREAM concede cluster-admin a essa SA (ClusterRoleBinding
+# 'lab-test-user-admin-access'). NÓS NÃO fazemos isso: nosso k3s PERSISTE entre
+# sessões, e cluster-admin numa SA de lab é superfície de risco. Em vez disso,
+# damos um ClusterRole de "operador de lab" — amplo nos recursos de WORKLOAD
+# que os labs de conceito usam, mas SEM os poderes perigosos de cluster (nós,
+# PVs, CRDs, webhooks, RBAC de cluster, escrita em kube-system).
+#
+# Se um lab futuro precisar de mais (ex.: StorageClass, CRDs), a alternativa
+# "igual ao upstream" é trocar o roleRef abaixo por 'cluster-admin' — decisão
+# consciente, documentada no README.
+# ============================================================================
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: lab-test-user
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: default
+  namespace: lab-test-user
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: girus-lab-operator
+  annotations:
+    description: "Permissões amplas de workload para o ambiente educacional, SEM cluster-admin"
+rules:
+  # Recursos core que os labs criam/inspecionam
+  - apiGroups: [""]
+    resources:
+      - namespaces
+      - pods
+      - pods/log
+      - pods/exec
+      - services
+      - configmaps
+      - secrets
+      - serviceaccounts
+      - persistentvolumeclaims
+      - events
+      - endpoints
+      - replicationcontrollers
+    verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+  # Workloads
+  - apiGroups: ["apps"]
+    resources: ["deployments", "replicasets", "statefulsets", "daemonsets"]
+    verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+  # Jobs e CronJobs (lab de cronjobs)
+  - apiGroups: ["batch"]
+    resources: ["jobs", "cronjobs"]
+    verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+  # Networking (Ingress/NetworkPolicy — labs de rede)
+  - apiGroups: ["networking.k8s.io"]
+    resources: ["ingresses", "networkpolicies"]
+    verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+  # RBAC NAMESPACED (roles/rolebindings dentro dos namespaces de lab) — NÃO cluster-scope
+  - apiGroups: ["rbac.authorization.k8s.io"]
+    resources: ["roles", "rolebindings"]
+    verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+  # Somente leitura de nós (o aluno faz 'kubectl get nodes' em exploração)
+  - apiGroups: [""]
+    resources: ["nodes"]
+    verbs: ["get", "list", "watch"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: lab-test-user-operator-access
+  annotations:
+    description: "Liga a SA default do lab-test-user ao girus-lab-operator (menor privilégio que cluster-admin)"
+subjects:
+  - kind: ServiceAccount
+    name: default
+    namespace: lab-test-user
+roleRef:
+  kind: ClusterRole
+  name: girus-lab-operator
+  apiGroup: rbac.authorization.k8s.io
+---
 apiVersion: v1
 kind: ConfigMap
 metadata:
@@ -270,11 +359,12 @@ data:
         }
     }
 # ============================================================================
-# NOTA sobre o usuário de lab: o manifesto ORIGINAL do Girus cria aqui um
-# namespace 'lab-test-user' + ClusterRoleBinding para 'cluster-admin' GLOBAL.
-# REMOVIDO de propósito nesta versão k3s — dar cluster-admin a uma SA de lab
-# num cluster persistente é risco desnecessário. O backend do Girus já cria os
-# namespaces/pods de cada lab sob demanda via girus-cluster-role (acima), com
-# verbos específicos. Se um lab exigir mais permissão, conceda o mínimo
-# adicional a ELE, nunca cluster-admin global. Ver README (Segurança / RBAC).
+# NOTA sobre o usuário de lab: o manifesto ORIGINAL do Girus cria um namespace
+# 'lab-test-user' + ClusterRoleBinding para 'cluster-admin' GLOBAL na SA default.
+# NESTA versão k3s mantemos o namespace e a SA (o backend cria o pod de lab ali),
+# mas trocamos o cluster-admin por 'girus-lab-operator' — ver o bloco "RBAC do
+# AMBIENTE DO ALUNO" acima. Menor privilégio: amplo nos recursos de workload que
+# os labs usam, SEM poderes perigosos de cluster (nós/PVs/CRDs/webhooks/RBAC de
+# cluster/kube-system). Se um lab exigir mais, conceda o mínimo adicional a ELE
+# (ou, conscientemente, troque o roleRef por cluster-admin). Ver README (RBAC).
 # ============================================================================

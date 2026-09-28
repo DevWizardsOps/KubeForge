@@ -128,7 +128,7 @@ helm template whoami charts/whoami         # imprime os manifests renderizados
 ```bash
 export KUBECONFIG=~/.kube/config-kubeforge
 # TROQUE o host pelo SEU (o do DDNS do LAB 01):
-helm install whoami charts/whoami --set ingress.host=kubeforge-<iniciais>.ddnsgeek.com
+helm install whoami charts/whoami --set ingress.host=$KUBEFORGE_HOST
 helm list                                  # release 'whoami' STATUS=deployed
 kubectl get deploy,svc,ingress -l app.kubernetes.io/instance=whoami
 ```
@@ -138,7 +138,7 @@ kubectl get deploy,svc,ingress -l app.kubernetes.io/instance=whoami
 Suba de 2 para 3 réplicas — o superpoder do `values`:
 ```bash
 helm upgrade whoami charts/whoami \
-  --set ingress.host=kubeforge-<iniciais>.ddnsgeek.com \
+  --set ingress.host=$KUBEFORGE_HOST \
   --set replicaCount=3
 kubectl get pods -l app.kubernetes.io/instance=whoami   # agora 3 pods
 helm history whoami                        # revisão 2 aparece

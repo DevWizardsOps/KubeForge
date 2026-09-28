@@ -57,7 +57,7 @@ templates/  ──┘                                                           
 
 ## Onde a turma trava (gotchas)
 
-- **Esquece o `--set ingress.host`** → o cert tenta emitir para `kubeforge-mwl` (o default
+- **Esquece o `--set ingress.host`** → o cert tenta emitir para `__KUBEFORGE_HOST__` (o placeholder sentinela
   do values) e o Ingress não bate com o DDNS do aluno. Sempre passar o host próprio.
 - **Confunde nome do release com nome do chart** → `helm install <release> <chart>`; o
   primeiro é o nome da instância, o segundo é o caminho/pacote.

@@ -109,7 +109,7 @@ Ambos são **idempotentes**: pós-reset, se o k3s já está ativo, não reinstal
 O IP público do server **muda** a cada nova sessão do Learner Lab. Para não editar o
 kubeconfig toda vez, o server atualiza sozinho um **hostname DDNS** (Dynu) apontando para o
 IP novo, no boot e a cada 15 min. Assim o kubeconfig usa um nome fixo
-(`https://kubeforge-mwl.ddnsgeek.com:6443`) para sempre.
+(`https://$KUBEFORGE_HOST:6443`) para sempre.
 
 ```text
 boot do server ─┐
@@ -130,7 +130,7 @@ ganha das iniciais. Deixar `owner_initials` e `dynu_hostname` ambos vazios faz o
 ```bash
 ssh -i vockey.pem ubuntu@<server_public_ip> \
   'sudo systemctl status kubeforge-dynu.timer; sudo journalctl -u kubeforge-dynu -n 5'
-dig +short kubeforge-mwl.ddnsgeek.com      # deve retornar o IP público atual do server
+dig +short $KUBEFORGE_HOST      # deve retornar o IP público atual do server
 ```
 
 **Troubleshooting (erros comuns):**

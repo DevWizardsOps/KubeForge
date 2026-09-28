@@ -3,7 +3,7 @@
 > Emite um **certificado TLS válido e auto-renovável** para um app exposto no
 > cluster, usando **cert-manager** + **Let's Encrypt** (desafio ACME HTTP-01),
 > pelo hostname DDNS do [LAB 01](../lab-01/README.md)
-> (`kubeforge-<iniciais>.ddnsgeek.com`).
+> (`$KUBEFORGE_HOST`).
 >
 > Provedor-agnóstico: roda igual em k3s ou em qualquer Kubernetes gerenciado. Os comandos
 > abaixo assumem o cluster do LAB 01 já no ar e `kubectl` configurado.
@@ -14,7 +14,7 @@
 2. Configurar **ClusterIssuers** do Let's Encrypt (staging + prod).
 3. Expor um app (**whoami**) via **Ingress** (Traefik, embutido no k3s).
 4. Emitir o cert **staging**, validar o fluxo, e **promover para prod**.
-5. Terminar com `https://kubeforge-<iniciais>.ddnsgeek.com` servindo cert confiável.
+5. Terminar com `https://$KUBEFORGE_HOST` servindo cert confiável.
 
 ```text
 Internet ─▶ :443 ─▶ Traefik (Ingress) ─▶ whoami
@@ -25,7 +25,7 @@ Internet ─▶ :443 ─▶ Traefik (Ingress) ─▶ whoami
 ## 2. Pré-requisitos
 
 - Cluster do LAB 01 no ar, `kubectl get nodes` mostrando os nós **Ready**.
-- **DDNS ativo**: `dig +short kubeforge-<iniciais>.ddnsgeek.com` retorna o IP do server.
+- **DDNS ativo**: `dig +short $KUBEFORGE_HOST` retorna o IP do server.
 - **Porta 80/443 abertas ao público** — o desafio HTTP-01 do Let's Encrypt valida
   acessando `http://<hostname>/.well-known/acme-challenge/...` a partir da internet.
   No LAB 01, ligue no `terraform.tfvars`:
@@ -36,10 +36,13 @@ Internet ─▶ :443 ─▶ Traefik (Ingress) ─▶ whoami
 
 ## 3. Por que este DNS funciona com Let's Encrypt
 
-`ddnsgeek.com` está na **Public Suffix List** (submetido pela Dynu). Isso significa
-que o Let's Encrypt trata `kubeforge-<iniciais>.ddnsgeek.com` como um **domínio
-registrado próprio** — seu limite de 5 certs/semana é **só seu**, não compartilhado
-com os outros usuários do `ddnsgeek.com`. Por isso a emissão funciona.
+Para o Let's Encrypt tratar o seu limite de certificados como **só seu** (5
+certs/semana por domínio registrado), o **sufixo** do seu `$KUBEFORGE_HOST` precisa
+estar na **Public Suffix List (PSL)**. Muitos domínios grátis de DDNS já estão — por
+exemplo o `ddnsgeek.com` da Dynu (foi o que usamos ao validar) — mas serve qualquer
+domínio na PSL, ou um domínio **próprio** seu. Se o sufixo do seu host **não** está
+na PSL, você divide o rate limit com todos os outros subdomínios daquele sufixo:
+funciona, mas pode esbarrar no limite. Confira em <https://publicsuffix.org/list/>.
 
 ## 4. Instalar o cert-manager
 
@@ -62,13 +65,14 @@ O script aplica os CRDs + controlador e espera os 3 pods (`cert-manager`,
 
 ## 6. Subir o app + Ingress (STAGING primeiro)
 
-1. Edite `manifests/03-whoami-ingress.yaml` e **troque `kubeforge-mwl.ddnsgeek.com`**
-   pelo seu hostname (2 ocorrências: `tls.hosts` e `rules.host`). Deixe o issuer em
-   `letsencrypt-staging`.
+1. Materialize o Ingress com o SEU host (na raiz do repo): defina `KUBEFORGE_HOST`
+   em `kubeforge.env` e rode `./configure.sh` — ele gera
+   `manifests/03-whoami-ingress.rendered.yaml` com o host real (2 ocorrências:
+   `tls.hosts` e `rules.host`). Comece com o issuer `letsencrypt-staging`.
 2. Aplique tudo:
    ```bash
    kubectl apply -f manifests/02-whoami-app.yaml
-   kubectl apply -f manifests/03-whoami-ingress.yaml
+   kubectl apply -f manifests/03-whoami-ingress.rendered.yaml
    ```
 3. Acompanhe a emissão do cert:
    ```bash
@@ -80,7 +84,7 @@ O script aplica os CRDs + controlador e espera os 3 pods (`cert-manager`,
 
 4. Teste (o cert staging **não é confiável** no browser — use `-k` no curl):
    ```bash
-   curl -k https://kubeforge-<iniciais>.ddnsgeek.com
+   curl -k https://$KUBEFORGE_HOST
    # deve responder com os headers do whoami
    ```
 
@@ -88,17 +92,17 @@ O script aplica os CRDs + controlador e espera os 3 pods (`cert-manager`,
 
 Só depois que o staging deu READY=True:
 
-1. Edite `manifests/03-whoami-ingress.yaml`: troque a anotação para
+1. Troque o issuer para prod (no template `manifests/03-whoami-ingress.yaml`) e rode `./configure.sh` de novo:
    `cert-manager.io/cluster-issuer: letsencrypt-prod`.
 2. Force a re-emissão:
    ```bash
    kubectl delete secret whoami-tls          # descarta o cert staging
-   kubectl apply -f manifests/03-whoami-ingress.yaml
+   kubectl apply -f manifests/03-whoami-ingress.rendered.yaml
    kubectl get certificate -w                # aguarda READY=True (prod)
    ```
 3. Teste **sem** `-k` (agora é confiável):
    ```bash
-   curl https://kubeforge-<iniciais>.ddnsgeek.com     # sem erro de cert
+   curl https://$KUBEFORGE_HOST     # sem erro de cert
    ```
    E abra no browser — cadeado verde. 🔒
 
@@ -106,7 +110,7 @@ Só depois que o staging deu READY=True:
 
 - cert-manager rodando no cluster.
 - `kubectl get certificate` → `whoami-tls` READY=True (emitido pelo prod).
-- `https://kubeforge-<iniciais>.ddnsgeek.com` com cert Let's Encrypt válido.
+- `https://$KUBEFORGE_HOST` com cert Let's Encrypt válido.
 - Renovação automática (cert-manager renova ~30 dias antes de expirar).
 
 ## 9. Validar automaticamente
@@ -145,7 +149,7 @@ o script. 🎉 se tudo passar; senão lista o que falta.
 ## 10. Limpeza
 
 ```bash
-kubectl delete -f manifests/03-whoami-ingress.yaml
+kubectl delete -f manifests/03-whoami-ingress.rendered.yaml
 kubectl delete -f manifests/02-whoami-app.yaml
 # cert-manager pode ficar para os próximos labs; para remover:
 # kubectl delete -f https://github.com/cert-manager/cert-manager/releases/download/v1.16.2/cert-manager.yaml

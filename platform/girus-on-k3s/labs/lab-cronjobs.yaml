@@ -6,12 +6,12 @@
 # Todo o crédito do conteúdo (tasks/validação) é da LINUXtips e contribuidores.
 #
 # MODIFICAÇÃO NOSSA (declarada como exige a GPL):
-#   - image do ambiente do aluno trocada para 'rancher/kubectl:v1.33.13' (multi-arch, ARM64).
+#   - image do ambiente do aluno trocada para 'alpine/k8s:1.33.1' (multi-arch, ARM64).
 #     Este lab não usa Kind aninhado — roda kubectl contra o cluster hospedeiro
 #     (o nosso k3s) via a ServiceAccount girus-sa.
 #
-# ⚠️ A verificar ao aplicar: rancher/kubectl é enxuta (só kubectl). Se um passo
-#    exigir shell/editor, trocar por imagem ARM64 com kubectl+sh.
+# NOTA: o pod-terminal do Girus roda '/bin/bash -c tail -f /dev/null'; alpine/k8s
+#       tem bash + kubectl + helm + curl, cobrindo os passos que pedem shell.
 # ============================================================================
 apiVersion: v1
 kind: ConfigMap
@@ -26,7 +26,7 @@ data:
     title: "Kubernetes: Automatizando Tarefas com CronJobs"
     description: "Aprenda a criar e gerenciar CronJobs no Kubernetes, agendando tarefas para execução automática em intervalos definidos. Neste laboratório guiado, você aprenderá o conceito de CronJobs, sua sintaxe de agendamento, como configurar políticas de retenção de histórico e monitorar suas execuções."
     duration: 30m
-    image: "rancher/kubectl:v1.33.13"
+    image: "alpine/k8s:1.33.1"
     privileged: true
     tasks:
       - name: "Conceitos de CronJobs no Kubernetes"

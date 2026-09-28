@@ -8,12 +8,12 @@
 #
 # MODIFICAÇÃO NOSSA (declarada como exige a GPL):
 #   - image: 'linuxtips/girus-kind-single-node:0.1' (amd64-only) trocada por
-#     'rancher/kubectl:v1.33.13' (multi-arch, roda no Graviton/ARM64). Este lab
+#     'alpine/k8s:1.33.1' (multi-arch, roda no Graviton/ARM64). Este lab
 #     não usa Kind aninhado — só roda kubectl contra o cluster hospedeiro (o
 #     nosso k3s), via a ServiceAccount girus-sa. Por isso a troca é segura.
 #
-# ⚠️ A verificar ao aplicar: rancher/kubectl é enxuta (só o binário kubectl).
-#   Se algum passo exigir shell/editor, trocar por imagem arm64 com kubectl+sh.
+# NOTA: o pod-terminal do Girus roda '/bin/bash -c tail -f /dev/null'; alpine/k8s
+#       tem bash + kubectl + helm + curl, cobrindo os passos que pedem shell.
 #
 # Aplicar:  kubectl apply -f labs/lab-deployment.yaml   (namespace girus)
 # ============================================================================
@@ -32,7 +32,7 @@ data:
     duration: 15m
     timerEnabled: true
     maxDuration: 20m
-    image: "rancher/kubectl:v1.33.13"
+    image: "alpine/k8s:1.33.1"
     tasks:
       - name: "Desafio 1: Criar um Deployment do Nginx"
         description: "Crie um deployment do Nginx com as especificações solicitadas"

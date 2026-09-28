@@ -13,18 +13,18 @@ browser e validação automática). Ver [`docs/ROADMAP.md`](../../docs/ROADMAP.m
 
 | # | Vem de | O quê |
 |---|---|---|
-| 1 | LAB 01 | Cluster k3s no ar + `KUBECONFIG` apontando pra ele + registro **wildcard** `*.kubeforge-<iniciais>.ddnsgeek.com` no Dynu (A → IP do server) |
+| 1 | LAB 01 | Cluster k3s no ar + `KUBECONFIG` apontando pra ele + registro **wildcard** `*.$KUBEFORGE_HOST` no Dynu (A → IP do server) |
 | 2 | LAB 02 | `cert-manager` instalado + ClusterIssuer `letsencrypt-prod` **Ready** |
 
 ### Hostname via wildcard (sem registrar DNS novo)
 
-O DDNS (Dynu) do LAB 01 já tem um registro **curinga** `*.kubeforge-<iniciais>.ddnsgeek.com`
+O DDNS (Dynu) do LAB 01 já tem um registro **curinga** `*.$KUBEFORGE_HOST`
 apontando para o IP do server. Então **qualquer subdomínio já resolve pro cluster** — o Girus
-usa `girus.kubeforge-<iniciais>.ddnsgeek.com` sem precisar de nenhum registro novo. O Traefik
+usa `girus.$KUBEFORGE_HOST` sem precisar de nenhum registro novo. O Traefik
 roteia pelo header `Host:`, e o Let's Encrypt valida (HTTP-01) porque o wildcard resolve.
 
-> **Padrão da trilha:** cada serviço futuro ganha `<nome>.kubeforge-<iniciais>.ddnsgeek.com`
-> de graça pelo wildcard. Confirme que resolve: `dig +short girus.kubeforge-<iniciais>.ddnsgeek.com`
+> **Padrão da trilha:** cada serviço futuro ganha `<nome>.$KUBEFORGE_HOST`
+> de graça pelo wildcard. Confirme que resolve: `dig +short girus.$KUBEFORGE_HOST`
 > deve devolver o IP do server. (O wildcard cobre **um** nível de subdomínio.)
 
 ## Como subir
@@ -32,22 +32,49 @@ roteia pelo header `Host:`, e o Let's Encrypt valida (HTTP-01) porque o wildcard
 ```bash
 export KUBECONFIG=~/.kube/config-kubeforge
 
-# 1. Troque o hostname nos dois arquivos (girus-mwl -> girus-<suas-iniciais>):
-#    - 02-girus-ingress.yaml  (spec.tls[].hosts e spec.rules[].host)
-sed -i '' 's/girus-mwl/girus-<suas-iniciais>/g' 02-girus-ingress.yaml   # macOS
+# 1. Defina o hostname UMA vez (na raiz do repo): copie kubeforge.env.example
+#    para kubeforge.env e preencha KUBEFORGE_HOST com o SEU host (o do LAB 01).
+#    NÃO edite os YAML à mão — o ./configure.sh materializa o host no passo 3.
 
 # 2. Plataforma (namespace, RBAC, backend, frontend, services, nginx):
 kubectl apply -f 01-girus-platform.yaml
 
-# 3. Ingress + TLS (cert-manager emite o cert do host girus-<iniciais>):
-kubectl apply -f 02-girus-ingress.yaml
+# 3. Ingress + TLS — SEM auth ainda (o basic-auth travaria o desafio HTTP-01):
+(cd ../.. && ./configure.sh)      # gera 02-girus-ingress.rendered.yaml com o host
+kubectl apply -f 02-girus-ingress.rendered.yaml
 
-# 4. Aguarde o cert ficar Ready (pode levar ~1-2 min no HTTP-01):
+# 4. ESPERE o cert ficar Ready (HTTP-01, ~1-2 min). Só siga quando READY=True:
 kubectl -n girus get certificate girus-frontend-tls -w
+#    (Ctrl-C quando aparecer READY=True)
+
+# 5. AUTENTICAÇÃO (só depois do cert!): gera a senha aleatória + Secrets.
+#    Imprime a senha e o comando de recuperá-la. GUARDE a senha.
+./setup-auth.sh                    # usuário 'girus' + senha aleatória
+#    (ou: ./setup-auth.sh -u marcelo)
+
+# 6. Cria o Middleware de basic-auth:
+kubectl apply -f 03-girus-auth.yaml
+
+# 7. LIGA o auth no Ingress (annotation) — agora sim, cert já emitido:
+kubectl -n girus annotate ingress girus-frontend \
+  traefik.ingress.kubernetes.io/router.middlewares=girus-girus-basic-auth@kubernetescrd \
+  --overwrite
 ```
 
-Acesse: `https://girus-<iniciais>.ddnsgeek.com` — a interface do Girus com o
-terminal interativo.
+Acesse: `https://girus.$KUBEFORGE_HOST` — o browser abre um **popup de
+login** (basic-auth do Traefik). Usuário/senha são os que o `setup-auth.sh`
+imprimiu. Para recuperar a senha a qualquer momento, no cluster:
+
+```bash
+kubectl -n girus get secret girus-auth-password -o jsonpath='{.data.password}' | base64 -d; echo
+```
+
+> **Por que auth só no passo 7?** O cert-manager valida o domínio via HTTP-01
+> batendo em `http://.../.well-known/acme-challenge/...`, que passa pelo mesmo
+> Ingress. Se o basic-auth já estiver ligado, o Traefik responde 401 nesse path e
+> a emissão do certificado **trava**. Ligue o auth só com o cert `Ready`. Se um
+> dia a renovação empacar, desligue o auth temporariamente (remova a annotation
+> com o sufixo `-`), renove, e religue.
 
 ## Carregar os labs de fundamentos
 
@@ -69,15 +96,34 @@ Duas formas de carregá-los:
 
 ## Segurança / RBAC — leia antes de usar
 
-O manifesto **original** do Girus concede **`cluster-admin` GLOBAL** a uma
-ServiceAccount de lab (`lab-test-user`). Num Kind descartável, tudo bem. **Neste
-cluster que persiste entre sessões, é risco desnecessário** — então **removemos**
-esse binding. O backend do Girus continua criando os namespaces/pods de cada lab
-sob demanda pela `girus-cluster-role`, com verbos específicos (sem admin global).
+Dois controles protegem o cluster, porque o ambiente de lab tem poder de criar
+workloads:
 
-Se um lab específico exigir mais permissão, conceda o **mínimo adicional a ele**,
-nunca `cluster-admin` global. O cluster é efêmero (Learner Lab hiberna em 4h),
-mas ainda assim: menor privilégio por padrão.
+**1. RBAC do aluno com menor privilégio.** O manifesto **original** do Girus
+concede **`cluster-admin` GLOBAL** à SA de lab (`lab-test-user/default`). Num Kind
+descartável, tudo bem; **neste cluster que persiste, é risco desnecessário.**
+Trocamos por um ClusterRole **`girus-lab-operator`**: amplo nos recursos de
+workload que os labs usam (namespaces, pods, deployments, services, configmaps,
+secrets, jobs, cronjobs, ingress, netpol, RBAC **namespaced**, leitura de nós),
+mas **SEM** os poderes perigosos de cluster (nós, PVs, CRDs, webhooks, RBAC de
+cluster, escrita em kube-system). Se um lab futuro precisar de mais, conceda o
+mínimo adicional a ELE — ou, conscientemente, troque o `roleRef` de
+`girus-lab-operator` por `cluster-admin` (é a alternativa "igual ao upstream").
+
+**2. Autenticação de borda (basic-auth).** Como o ambiente cria containers no
+cluster, expor o Girus na internet SEM login deixaria qualquer um criar workloads.
+Um Middleware Traefik (`03-girus-auth.yaml`) exige **usuário + senha** antes de
+rotear para o frontend — sem tocar no Girus (nada de fork). A senha é uma **chave
+aleatória** gerada pelo `setup-auth.sh` e guardada em Secret:
+- `girus-basic-auth`    → `usuario:hash-bcrypt` (consumido pelo Traefik)
+- `girus-auth-password` → senha em texto (para recuperar)
+
+Recuperar a senha:
+```bash
+kubectl -n girus get secret girus-auth-password -o jsonpath='{.data.password}' | base64 -d; echo
+```
+Trocar a senha: rode `./setup-auth.sh` de novo (regenera) e reaplique nada mais —
+o Traefik relê o Secret. Para rotacionar o usuário: `./setup-auth.sh -u <novo>`.
 
 ## Validar
 

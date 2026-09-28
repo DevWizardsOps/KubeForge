@@ -33,7 +33,7 @@ kubectl apply -f labs/
 kubectl apply -f labs/lab-deployment.yaml
 ```
 
-Depois, na interface do Girus (`https://girus.kubeforge-<iniciais>.ddnsgeek.com`),
+Depois, na interface do Girus (`https://girus.$KUBEFORGE_HOST`),
 os labs aparecem na lista para iniciar.
 
 ## Ponto a verificar ao aplicar (honesto)

@@ -1,0 +1,42 @@
+# ============================================================================
+# Autenticação de BORDA para o GIRUS  (Traefik basic-auth)
+# ----------------------------------------------------------------------------
+# POR QUÊ: o ambiente de lab roda com o ClusterRole 'girus-lab-operator' — poder
+# amplo de workload (criar namespaces, pods, deployments...). Expor o Girus na
+# internet SEM autenticação deixaria qualquer um criar containers no cluster.
+# Uma tela de login básica na BORDA (antes do frontend) fecha esse risco sem
+# tocar no Girus (nada de fork): o Traefik pede usuário+senha antes de rotear.
+#
+# COMO A SENHA FUNCIONA (importante):
+#   O Traefik basic-auth NÃO lê a senha em texto — ele lê um Secret no formato
+#   htpasswd (usuario:hash-bcrypt). Por isso a senha é gerada e materializada
+#   por um SCRIPT (setup-auth.sh), não por este YAML estático:
+#     - Secret 'girus-basic-auth'    -> usuario:hash  (consumido pelo Traefik)
+#     - Secret 'girus-auth-password' -> senha em texto (para você/o aluno pegar)
+#   Rode ./setup-auth.sh ANTES de aplicar o Ingress (03 depende dele).
+#
+# O Middleware abaixo apenas REFERENCIA o Secret 'girus-basic-auth'. Ele só passa
+# a valer quando o Ingress for anotado para usá-lo — e isso é feito DEPOIS do
+# cert TLS estar Ready, senão o basic-auth responde 401 no desafio HTTP-01 do
+# Let's Encrypt e a emissão do certificado trava. Passo de ativação (após o cert):
+#
+#   kubectl -n girus annotate ingress girus-frontend \
+#     traefik.ingress.kubernetes.io/router.middlewares=girus-girus-basic-auth@kubernetescrd \
+#     --overwrite
+#
+# Para DESLIGAR o auth (ex.: renovar cert com problema): remova a annotation:
+#   kubectl -n girus annotate ingress girus-frontend \
+#     traefik.ingress.kubernetes.io/router.middlewares- --overwrite
+# ============================================================================
+apiVersion: traefik.io/v1alpha1
+kind: Middleware
+metadata:
+  name: girus-basic-auth
+  namespace: girus
+spec:
+  basicAuth:
+    secret: girus-basic-auth
+    realm: "GIRUS Labs - KubeForge (login exigido: o ambiente cria recursos no cluster)"
+    # removeHeader: retira o header Authorization antes de repassar ao frontend,
+    # pra credencial não vazar pro backend do Girus.
+    removeHeader: true

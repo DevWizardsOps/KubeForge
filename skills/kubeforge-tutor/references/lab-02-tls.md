@@ -23,7 +23,7 @@ Internet ──▶ :443 ──▶ Traefik (Ingress, já vem no k3s) ──▶ ap
 ## Conceitos-chave (explique nesta ordem)
 
 1. **TLS = confiança + criptografia.** O cert prova "este servidor é mesmo
-   `kubeforge-mwl.ddnsgeek.com`" e cifra o tráfego. Uma **CA** (Let's Encrypt)
+   `$KUBEFORGE_HOST`" e cifra o tráfego. Uma **CA** (Let's Encrypt)
    assina o cert; o browser confia na CA.
 2. **ACME / HTTP-01.** O Let's Encrypt precisa provar que VOCÊ controla o
    domínio. No desafio HTTP-01 ele acessa `http://<host>/.well-known/...` — se
@@ -35,9 +35,10 @@ Internet ──▶ :443 ──▶ Traefik (Ingress, já vem no k3s) ──▶ ap
 4. **staging vs prod.** O Let's Encrypt **prod** tem limite (5 certs/semana por
    domínio) e emite cert CONFIÁVEL. O **staging** é ilimitado mas emite cert
    NÃO-confiável (cadeado vermelho). Regra: valide no staging, promova pro prod.
-5. **Public Suffix List (por que ESTE domínio funciona).** `ddnsgeek.com` está na
-   PSL (submetido pela Dynu), então o LE trata cada subdomínio como domínio
-   próprio — seu limite de 5/semana é só seu.
+5. **Public Suffix List (por que o domínio importa).** O sufixo do `KUBEFORGE_HOST`
+   precisa estar na PSL para o LE tratar cada subdomínio como domínio próprio (limite
+   de 5/semana só seu). Vários DDNS grátis já estão — ex.: `ddnsgeek.com` da Dynu, que
+   usamos ao validar — mas serve qualquer domínio na PSL ou um domínio próprio.
 
 ## Roteiro de ensino (passos)
 

@@ -6,12 +6,12 @@
 # Todo o crédito do conteúdo (tasks/validação) é da LINUXtips e contribuidores.
 #
 # MODIFICAÇÃO NOSSA (declarada como exige a GPL):
-#   - image do ambiente do aluno trocada para 'rancher/kubectl:v1.33.13' (multi-arch, ARM64).
+#   - image do ambiente do aluno trocada para 'alpine/k8s:1.33.1' (multi-arch, ARM64).
 #     Este lab não usa Kind aninhado — roda kubectl contra o cluster hospedeiro
 #     (o nosso k3s) via a ServiceAccount girus-sa.
 #
-# ⚠️ A verificar ao aplicar: rancher/kubectl é enxuta (só kubectl). Se um passo
-#    exigir shell/editor, trocar por imagem ARM64 com kubectl+sh.
+# NOTA: o pod-terminal do Girus roda '/bin/bash -c tail -f /dev/null'; alpine/k8s
+#       tem bash + kubectl + helm + curl, cobrindo os passos que pedem shell.
 # ============================================================================
 apiVersion: v1
 kind: ConfigMap
@@ -28,7 +28,7 @@ data:
     duration: 15m
     timerEnabled: true
     maxDuration: 20m
-    image: "rancher/kubectl:v1.33.13" # Imagem com Kind/kubectl
+    image: "alpine/k8s:1.33.1"
     tasks:
       - name: "Desafio 1: Configurar um Ambiente de Trabalho"
         description: "Configure um namespace isolado e crie os recursos iniciais necessários."

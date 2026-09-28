@@ -12,7 +12,7 @@ Toda sessão o server ganha um IP público NOVO.
    ↓
 Um timer no server avisa o Dynu: "meu IP agora é X".
    ↓
-kubeforge-<iniciais>.ddnsgeek.com passa a apontar pro IP novo.
+o seu hostname ($KUBEFORGE_HOST) passa a apontar pro IP novo.
    ↓
 Seu kubectl usa o NOME (não o IP) → nunca mais reconfigura nada.
 ```
@@ -101,7 +101,7 @@ Só isso. O Terraform monta o hostname das iniciais, injeta no `--tls-san` do k3
 
 ```bash
 # 1) O hostname aponta pro IP do server?
-dig +short kubeforge-mwl.ddnsgeek.com
+dig +short $KUBEFORGE_HOST
 terraform output -raw server_public_ip
 # os dois devem bater.
 
