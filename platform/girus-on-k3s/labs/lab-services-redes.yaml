@@ -38,9 +38,9 @@ data:
           - "Vamos verificar se o namespace foi criado corretamente listando todos os namespaces disponíveis:"
           - "`kubectl get namespaces`"
           - "Você deve ver o namespace 'servicos-lab' na lista, junto com os namespaces padrão como 'default', 'kube-system' e outros."
-          - "Para facilitar nossos comandos, vamos configurar o namespace 'servicos-lab' como o namespace padrão para nossa sessão atual:"
-          - "`kubectl config set-context --current --namespace=servicos-lab`"
-          - "Este comando altera o contexto atual do kubectl para usar 'servicos-lab' como namespace padrão. Isso significa que não precisaremos especificar `-n servicos-lab` em cada comando que executarmos."
+          - "Neste laboratório, vamos passar o namespace explicitamente em cada comando com a flag `-n servicos-lab` — é a forma que sempre funciona, inclusive neste terminal."
+          - "Observação: o terminal do lab não tem um contexto nomeado configurado, então `kubectl config set-context --current` retorna 'no current context is set'. Por isso usamos `-n servicos-lab` diretamente nos comandos a seguir, em vez de definir um namespace padrão."
+          - "Se quiser mesmo assim definir um padrão, primeiro descubra o cluster/usuário do kubeconfig com `kubectl config view --minify` e crie um contexto — mas para este lab isso não é necessário."
         tips:
           - type: "info"
             title: "Namespaces no Kubernetes"
