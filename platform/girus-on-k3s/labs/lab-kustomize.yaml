@@ -1,0 +1,161 @@
+# ============================================================================
+# Lab GIRUS — Kustomize no Kubernetes  (KubeForge, Fase 2 — entrega de software)
+# ============================================================================
+# ORIGEM: conteudo proprio do KubeForge (Marcelo Wanderley Lima).
+#
+# Roda no nosso k3s ARM64 via a plataforma GIRUS. A imagem do ambiente do aluno
+# (alpine/k8s:1.33.1) traz kubectl, que ja inclui o Kustomize nativo
+# (kubectl kustomize / kubectl apply -k) — sem ferramenta extra. A validacao roda
+# como a SA restrita lab-test-user:default; o ClusterRole girus-lab-operator ja
+# concede create/get/list/delete de deployments/services/configmaps no namespace.
+#
+# Padrao de autoria (terminal web do Girus): NAO pedir para digitar YAML no editor
+# (a indentacao se perde). Cada arquivo (base/overlay) e criado com um comando
+# printf de uma linha copiavel; o YAML e mostrado acima apenas como leitura.
+# ============================================================================
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: kubernetes-kustomize-lab
+  namespace: girus
+  labels:
+    app: girus-lab-template
+data:
+  lab.yaml: |
+    name: kubernetes-kustomize
+    title: "Lab Kustomize — Configuração por ambiente sem templates"
+    description: "Aprenda o Kustomize, o gerenciador de configuração declarativo embutido no kubectl. Em vez de um template com variáveis (como o Helm), você mantém uma base e aplica sobreposições (overlays) por ambiente — patches que o Kubernetes combina na hora. Você vai criar uma base, derivar um overlay de produção e aplicá-lo com kubectl apply -k."
+    duration: 30m
+    image: "alpine/k8s:1.33.1"
+    tasks:
+      - name: "Conceitos: Kustomize vs Helm"
+        description: "Entenda o modelo do Kustomize e confirme que ele está disponível no kubectl."
+        steps:
+          - "O Kustomize é o gerenciador de configuração declarativo embutido no kubectl. Ele resolve o mesmo problema do Helm — configurar a mesma aplicação de formas diferentes por ambiente — mas com uma abordagem oposta."
+          - "Helm x Kustomize, a diferença central:"
+          - "- Helm usa um template com variáveis: o YAML tem marcadores e você injeta valores."
+          - "- Kustomize NÃO tem template: você mantém YAML puro e válido (a base) e aplica sobreposições (overlays) que alteram campos específicos por ambiente."
+          - "Vantagens do modelo do Kustomize:"
+          - "- A base é sempre YAML Kubernetes válido — você pode aplicá-la direto, sem renderizar nada."
+          - "- Nada de sintaxe de template para aprender; é só Kubernetes."
+          - "- Está no kubectl nativamente (kubectl apply -k), sem instalar ferramenta."
+          - "Confirme que o Kustomize está disponível no seu kubectl:"
+          - "`kubectl kustomize --help >/dev/null 2>&1 && echo 'kustomize disponivel' || echo indisponivel`"
+        tips:
+          - type: "info"
+            title: "Quando usar cada um"
+            content: "Kustomize brilha quando a variação entre ambientes é pequena (réplicas, imagem, labels). Helm brilha para empacotar e distribuir uma aplicação parametrizável para terceiros. Muitos times usam os dois."
+        validation:
+          - command: "kubectl kustomize --help >/dev/null 2>&1 && echo ok || echo fail"
+            expectedOutput: "ok"
+            errorMessage: "O Kustomize (kubectl kustomize) não está disponível. Verifique a versão do kubectl."
+
+      - name: "Criar a base"
+        description: "Monte a base: um Deployment em YAML puro e o arquivo kustomization que o agrupa."
+        steps:
+          - "A base é um diretório com YAML Kubernetes válido mais um arquivo kustomization.yaml que lista os recursos. Este é o Deployment da base (mostrado para leitura — não precisa digitar):"
+          - "```yaml"
+          - "apiVersion: apps/v1"
+          - "kind: Deployment"
+          - "metadata:"
+          - "  name: web"
+          - "spec:"
+          - "  replicas: 1"
+          - "  selector:"
+          - "    matchLabels:"
+          - "      app: web"
+          - "  template:"
+          - "    metadata:"
+          - "      labels:"
+          - "        app: web"
+          - "    spec:"
+          - "      containers:"
+          - "      - name: web"
+          - "        image: nginx:1.25-alpine"
+          - "```"
+          - "1. Crie o diretório da base e o arquivo do Deployment com um comando (o printf gera o arquivo já indentado):"
+          - "`mkdir -p base && printf 'apiVersion: apps/v1\\nkind: Deployment\\nmetadata:\\n  name: web\\nspec:\\n  replicas: 1\\n  selector:\\n    matchLabels:\\n      app: web\\n  template:\\n    metadata:\\n      labels:\\n        app: web\\n    spec:\\n      containers:\\n      - name: web\\n        image: nginx:1.25-alpine\\n' > base/deployment.yaml`"
+          - "2. Crie o kustomization.yaml da base, que lista os recursos:"
+          - "`printf 'apiVersion: kustomize.config.k8s.io/v1beta1\\nkind: Kustomization\\nresources:\\n- deployment.yaml\\n' > base/kustomization.yaml`"
+          - "3. Renderize a base para ver o YAML final que o Kustomize produz (sem aplicar nada):"
+          - "`kubectl kustomize base`"
+          - "Repare que a saída é o próprio Deployment com 1 réplica — a base é YAML válido, aplicável como está."
+        tips:
+          - type: "tip"
+            title: "kubectl kustomize vs apply -k"
+            content: "kubectl kustomize DIR renderiza e imprime o YAML (não toca no cluster). kubectl apply -k DIR renderiza E aplica. Use o primeiro para revisar."
+        validation:
+          - command: "kubectl kustomize base 2>/dev/null | grep -q 'name: web' && echo ok || echo fail"
+            expectedOutput: "ok"
+            errorMessage: "A base não renderiza. Confira base/deployment.yaml e base/kustomization.yaml."
+
+      - name: "Criar um overlay de produção"
+        description: "Derive um overlay que altera a base para produção — sem copiar o Deployment inteiro."
+        steps:
+          - "Um overlay referencia a base e declara só o que muda. Aqui o overlay de produção adiciona um prefixo ao nome e sobe as réplicas para 3. Este é o kustomization.yaml do overlay (leitura — não precisa digitar):"
+          - "```yaml"
+          - "apiVersion: kustomize.config.k8s.io/v1beta1"
+          - "kind: Kustomization"
+          - "resources:"
+          - "- ../../base"
+          - "namePrefix: prod-"
+          - "replicas:"
+          - "- name: web"
+          - "  count: 3"
+          - "```"
+          - "1. Crie o diretório do overlay e seu kustomization.yaml:"
+          - "`mkdir -p overlays/prod && printf 'apiVersion: kustomize.config.k8s.io/v1beta1\\nkind: Kustomization\\nresources:\\n- ../../base\\nnamePrefix: prod-\\nreplicas:\\n- name: web\\n  count: 3\\n' > overlays/prod/kustomization.yaml`"
+          - "2. Renderize o overlay e compare com a base — o nome vira prod-web e as réplicas viram 3, sem ter reescrito o Deployment:"
+          - "`kubectl kustomize overlays/prod`"
+          - "Repare: a base continua intacta (1 réplica, nome web). O overlay só declarou as diferenças, e o Kustomize combinou tudo na renderização. É a alternativa ao template do Helm."
+        tips:
+          - type: "info"
+            title: "Overlays comuns"
+            content: "Além de namePrefix e replicas, overlays costumam ajustar images (nova tag por ambiente), labels/annotations comuns (commonLabels) e patches arbitrários (patches:) para qualquer campo."
+        validation:
+          - command: "kubectl kustomize overlays/prod 2>/dev/null | grep -q 'name: prod-web' && echo ok || echo fail"
+            expectedOutput: "ok"
+            errorMessage: "O overlay não renderiza com o prefixo prod-. Confira overlays/prod/kustomization.yaml."
+          - command: "kubectl kustomize overlays/prod 2>/dev/null | grep -Eq 'replicas: 3' && echo ok || echo fail"
+            expectedOutput: "ok"
+            errorMessage: "O overlay não define 3 réplicas. Confira o bloco replicas no kustomization do overlay."
+
+      - name: "Aplicar o overlay no cluster"
+        description: "Aplique o overlay com kubectl apply -k e confirme o resultado no cluster."
+        steps:
+          - "O kubectl aplica um diretório Kustomize diretamente com a flag -k (de kustomize), renderizando e enviando ao cluster num passo só."
+          - "1. Aplique o overlay de produção:"
+          - "`kubectl apply -k overlays/prod`"
+          - "2. Confirme que o Deployment prod-web foi criado com 3 réplicas:"
+          - "`kubectl get deployment prod-web`"
+          - "3. Veja os pods do Deployment:"
+          - "`kubectl get pods -l app=web`"
+          - "Você aplicou uma configuração de produção derivada de uma base comum, sem duplicar YAML e sem template — só declarando as diferenças."
+        tips:
+          - type: "tip"
+            title: "GitOps e Kustomize"
+            content: "ArgoCD e Flux entendem Kustomize nativamente: você aponta o overlay do ambiente e o GitOps aplica. É por isso que Kustomize é tão comum em repositórios GitOps."
+        validation:
+          - command: "kubectl get deployment prod-web -o jsonpath='{.spec.replicas}' 2>/dev/null || echo ''"
+            expectedOutput: "3"
+            errorMessage: "O Deployment prod-web não foi criado com 3 réplicas. Rode kubectl apply -k overlays/prod."
+
+      - name: "Limpeza dos Recursos"
+        description: "Remova os recursos aplicados e entenda a simetria do apply -k / delete -k."
+        steps:
+          - "Assim como o apply, o Kustomize também remove um conjunto de recursos de uma vez, pela mesma flag -k."
+          - "1. Remova o que o overlay criou:"
+          - "`kubectl delete -k overlays/prod --ignore-not-found`"
+          - "2. Confirme que o Deployment prod-web sumiu:"
+          - "`kubectl get deployment prod-web 2>&1 | grep -qi 'not found' && echo removido || echo existe`"
+          - "3. (Opcional) Limpe os arquivos que você gerou no terminal:"
+          - "`rm -rf base overlays`"
+          - "Este é o ciclo do Kustomize: base + overlays em YAML puro, render com kubectl kustomize, aplicar e remover com kubectl apply/delete -k."
+        tips:
+          - type: "info"
+            title: "delete -k"
+            content: "O kubectl delete -k renderiza o mesmo conjunto do overlay e remove exatamente aqueles objetos — a simetria com apply -k é o que torna o ciclo previsível."
+        validation:
+          - command: "kubectl get deployment prod-web 2>&1 | grep -qi 'not found' && echo 'not found' || echo existe"
+            expectedOutput: "not found"
+            errorMessage: "O Deployment prod-web ainda existe. Rode kubectl delete -k overlays/prod --ignore-not-found."
