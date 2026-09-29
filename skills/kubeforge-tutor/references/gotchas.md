@@ -53,11 +53,27 @@ mas falha no lab: quase sempre é uma destas.
 
 ### Render do painel de Tarefas
 
+> **Regra definitiva (comprovada em UI real, set/2026):** o `**negrito**` renderiza
+> como **texto normal — NÃO vira chip**. Só a **crase** (`` `x` ``) vira chip copiável
+> isolado. Então: use negrito à vontade em títulos e ênfase; a crase é o que precisa
+> sumir do texto explicativo. (A versão antiga desta doc dizia que negrito também
+> virava chip — está errado.)
+
 | Sintoma | Causa | Cura |
 |---|---|---|
-| nome/palavra em negrito ou crase vira um "chip" copiável solto no meio do texto | o Girus renderiza **qualquer** destaque inline (`**x**` E `` `x` ``) como chip; não existe destaque inline | texto explicativo = **texto puro** (zero `**`, zero `` ` ``); crase/negrito **só** em item que é um comando inteiro pra copiar |
-| bloco de código multi-linha (```` ``` ````) aparece quebrado, sem botão copiar | cada item do array `steps` é um parágrafo isolado; o fence não engloba os itens seguintes | comando copiável = **uma linha** entre crases, sem `\n`. Para criar objeto, use comando **imperativo** (`kubectl create/run/expose`), nunca YAML colado nem `printf` com `\n` |
+| palavra em **crase** (`` `x` ``) vira um "chip" copiável solto no meio do texto | o Girus transforma **qualquer** crase inline em chip; não existe crase decorativa | texto explicativo = **texto puro** (zero `` ` ``); crase **só** em item que é um comando inteiro pra copiar. **Negrito (`**x**`) é seguro** — renderiza como texto, use nos títulos |
+| bloco de código multi-linha (```` ``` ````) aparece quebrado, sem botão copiar | cada item do array `steps` é um parágrafo isolado; o fence não engloba os itens seguintes. **Testados 4 formatos — nenhum funciona:** `\n` numa string fica literal; fence achata a indentação + gera chips vazios (linhas em branco); string única dentro de fence vira 1 chip ilegível; texto puro linha-a-linha achata a indentação | comando copiável = **uma linha** entre crases, sem `\n`. Para criar objeto, use comando **imperativo** (`kubectl create/run/expose`), nunca YAML colado nem `printf` com `\n`. YAML de referência multi-linha vai pra **doc do repo** (markdown de verdade), não pro `steps` |
 | item `- \`campo\`: explicação` mostra só o `campo`, a explicação some | o chip come o resto do item | use texto puro: `- campo: explicação` |
+| link markdown `[texto](url)` no meio de um `step` também vira chip | mesma regra de destaque inline dos `steps` | ponha links em **`tips.content`** (o card de dica renderiza `[texto](url)` como link de verdade — render-safe), nunca dentro de `steps` |
+
+> **Schema de step: use STRING, não objeto.** O nosso `girus-backend:0.5.0` (a tag mais
+> nova publicada no Docker Hub) declara `steps` como `[]string`. O schema oficial
+> `{description, command, expectedOutput, hint}` que aparece em `labs/*/lab.yaml` do
+> repo upstream **NÃO carrega** aqui — dá `cannot unmarshal !!map into string` e o lab
+> nem aparece (comprovado com o arquivo oficial exato). Esse schema-objeto é de outro
+> subsistema (repo de labs remoto), roda num backend não publicado. O que a CLI oficial
+> de fato embute (`internal/templates/manifests/lab_NN_*.yaml`) também é STRING, igual ao
+> nosso. **Não migrar pro schema-objeto** — quebra todos os labs.
 
 ### Validação (roda no backend, como a SA do aluno)
 
