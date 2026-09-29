@@ -69,6 +69,7 @@ Para QUALQUER lab, siga esta ordem — é o que faz o conceito "colar":
 | CronJobs | agendamento, ciclo de vida, Jobs | `lab-cronjobs.yaml` |
 | Exploração de Recursos | namespaces, troubleshooting, limpeza | `lab-exploracao-recursos.yaml` |
 | Helm | empacotamento: chart, install/upgrade/rollback | `lab-helm.yaml` (teoria: `docs/helm.md`) |
+| Kustomize | config por ambiente sem template: base + overlays, apply -k | `lab-kustomize.yaml` |
 
 > **Ao EDITAR um lab Girus**, leia primeiro a seção "Autoria de labs Girus" em
 > `references/gotchas.md` — o painel de Tarefas tem regras de render e validação

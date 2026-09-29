@@ -50,6 +50,7 @@ e validação automática. Subir a plataforma: [`platform/girus-on-k3s/README.md
 | 4 | CronJobs | Agendamento, ciclo de vida, monitoramento de Jobs |
 | 5 | Exploração de Recursos | Namespaces, troubleshooting, limpeza seletiva |
 | 6 | Helm | Empacotamento: chart, install/upgrade/rollback (teoria em [`docs/helm.md`](docs/helm.md)) |
+| 7 | Kustomize | Configuração por ambiente sem templates: base + overlays, `apply -k` |
 
 Os labs vivem em `platform/girus-on-k3s/labs/*.yaml` (ConfigMaps que o backend
 do Girus detecta). Suba todos de uma vez com `kubectl apply -f labs/` (ver o

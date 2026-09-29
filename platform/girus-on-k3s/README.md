@@ -80,7 +80,7 @@ kubectl -n girus get secret girus-auth-password -o jsonpath='{.data.password}' |
 ## Carregar os labs de fundamentos
 
 Os labs do Girus são **ConfigMaps** (`kind: ConfigMap` com o `lab.yaml` dentro),
-e os nossos vivem em [`labs/`](labs/). São **6 labs** adaptados/criados para o
+e os nossos vivem em [`labs/`](labs/). São **7 labs** adaptados/criados para o
 nosso k3s ARM64 e validados no cluster real:
 
 | # | Arquivo | Tema |
@@ -91,6 +91,7 @@ nosso k3s ARM64 e validados no cluster real:
 | 4 | `labs/lab-cronjobs.yaml` | CronJobs — agendamento, ciclo de vida, Jobs |
 | 5 | `labs/lab-exploracao-recursos.yaml` | Exploração — namespaces, troubleshooting, limpeza seletiva |
 | 6 | `labs/lab-helm.yaml` | Helm — empacotamento: chart, install/upgrade/rollback (teoria em [`docs/helm.md`](../../docs/helm.md)) |
+| 7 | `labs/lab-kustomize.yaml` | Kustomize — configuração por ambiente sem templates: base + overlays, `apply -k` |
 
 **Suba todos os labs de uma vez** (o `-f labs/` aplica o diretório inteiro) e
 recarregue o backend para ele detectá-los:
@@ -102,7 +103,7 @@ kubectl -n girus rollout restart deployment/girus-backend
 kubectl -n girus rollout status  deployment/girus-backend --timeout=90s
 ```
 
-Depois disso, os 6 labs aparecem na UI do Girus e você vai fazendo cada um pela
+Depois disso, os 7 labs aparecem na UI do Girus e você vai fazendo cada um pela
 plataforma. Para **reaplicar um lab** que você editou, aplique só ele
 (`kubectl apply -f labs/lab-helm.yaml`) + o mesmo `rollout restart`.
 
