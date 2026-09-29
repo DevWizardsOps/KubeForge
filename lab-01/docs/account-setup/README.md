@@ -20,17 +20,15 @@ Guia de acesso ao ambiente AWS. O Learner Lab dá uma conta AWS temporária
 4. No menu lateral, clique em **Módulos** e desça até **"Iniciar os laboratórios de
    aprendizagem da AWS Academy"**:
 
-   ![Módulos](../images/04-modulos.png)
+   ![Tela de Módulos com "Iniciar os laboratórios de aprendizagem da AWS Academy"](../images/05-iniciar-laboratorios-terminal.png)
 
 5. Abra o laboratório e clique em **Start Lab**. Espere o indicador ao lado de **AWS**
    ficar **verde**; então clique em **AWS** para abrir o console autenticado:
 
-   ![Terminal do lab + Start Lab](../images/05-iniciar-laboratorios-terminal.png)
+   ![Terminal do lab com Start Lab, cronômetro e "Used $0 of $50"](../images/06-console-aws-logado.png)
 
 6. Você cai no **AWS Management Console** já logado (repare no cronômetro da sessão e no
-   nome `voclabs/user...`):
-
-   ![Console AWS logado](../images/06-console-aws-logado.png)
+   nome `voclabs/user...`).
 
 > ⏱️ **Sessão de 4 horas.** Um cronômetro conta no topo. Ao zerar (ou ao clicar **End Lab**),
 > as instâncias EC2 **param** (stop) — não são deletadas. Você pode reiniciá-las na próxima sessão.
