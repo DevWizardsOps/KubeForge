@@ -59,7 +59,7 @@ Para QUALQUER lab, siga esta ordem — é o que faz o conceito "colar":
 
 ## Índice de labs (aponte para o README e a referência didática)
 
-**Fase 1 — Labs Girus** (plataforma interativa; arquivos em `~/git/KubeForge/platform/girus-on-k3s/labs/`):
+**Labs Girus** (plataforma interativa — fundamentos E entrega de software; arquivos em `~/git/KubeForge/platform/girus-on-k3s/labs/`):
 
 | Lab Girus | Tema | Arquivo |
 |-----------|------|---------|

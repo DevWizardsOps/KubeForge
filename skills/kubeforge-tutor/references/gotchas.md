@@ -48,7 +48,7 @@ cura**. É o material mais valioso pra ensinar (o erro é onde se aprende).
 ## Autoria de labs Girus (para quem EDITA os `platform/girus-on-k3s/labs/*.yaml`)
 
 Estas armadilhas **reprovam labs corretos** ou quebram o painel — descobertas
-depurando os 5 labs no cluster real. O comando funciona no seu terminal (admin)
+depurando os labs no cluster real. O comando funciona no seu terminal (admin)
 mas falha no lab: quase sempre é uma destas.
 
 ### Render do painel de Tarefas
@@ -82,8 +82,8 @@ mas falha no lab: quase sempre é uma destas.
 | Sintoma | Causa | Cura |
 |---|---|---|
 | `create ... already exists` quando o aluno repete um passo | comandos de criação não são idempotentes | `kubectl create ... --dry-run=client -o yaml | kubectl apply -f -`; deletes com `--ignore-not-found` |
-| lab não "finaliza"/PRÓXIMA fica cinza mesmo com VERIFICAR ok | falta uma **task de Limpeza dedicada** como última | toda trilha de lab termina numa task "Limpeza dos Recursos" (padrão dos 5 labs) |
-| mudança no `.yaml` não pega | backend cacheia labs no boot; sessão snapshota validação no início | `kubectl apply -f labs/X.yaml` + `rollout restart deployment/girus-backend` + **sessão nova** do lab |
+| lab não "finaliza"/PRÓXIMA fica cinza mesmo com VERIFICAR ok | falta uma **task de Limpeza dedicada** como última | toda trilha de lab termina numa task "Limpeza dos Recursos" (padrão de todos os labs) |
+| mudança no `.yaml` não pega | backend cacheia labs no boot; sessão snapshota validação no início | subir TODOS: `kubectl apply -f labs/`; reaplicar um: `kubectl apply -f labs/X.yaml`; sempre seguido de `rollout restart deployment/girus-backend` + **sessão nova** do lab |
 
 ## Gerais (KiroCrew / git)
 
