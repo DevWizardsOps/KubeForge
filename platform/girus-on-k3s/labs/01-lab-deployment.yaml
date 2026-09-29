@@ -45,7 +45,7 @@ data:
           - "- Replicas: 2"
           - "- Label: app=nginx-challenge"
           - "Verifique se o deployment foi criado corretamente e está rodando."
-          - "Dica: a validação exige selector app=nginx-challenge, que o `kubectl create deployment` não define sozinho. Comandos de referência (uma linha cada, pode copiar):"
+          - "Dica: a validação exige selector app=nginx-challenge, que o kubectl create deployment não define sozinho. Comandos de referência (uma linha cada, pode copiar):"
           - "`kubectl create namespace challenge-namespace`"
           - "`kubectl create deployment nginx-deployment --image=nginx:1.20 --replicas=2 -n challenge-namespace --dry-run=client -o yaml | sed 's/app: nginx-deployment/app: nginx-challenge/g' | kubectl apply -f -`"
           - "`kubectl get deployment nginx-deployment -n challenge-namespace -o wide`"
