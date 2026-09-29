@@ -77,7 +77,7 @@ kubectl -n girus get secret girus-auth-password -o jsonpath='{.data.password}' |
 > dia a renovação empacar, desligue o auth temporariamente (remova a annotation
 > com o sufixo `-`), renove, e religue.
 
-## Carregar os labs de fundamentos
+## Carregar os labs
 
 Os labs do Girus são **ConfigMaps** (`kind: ConfigMap` com o `lab.yaml` dentro),
 e os nossos vivem em [`labs/`](labs/). São **7 labs** adaptados/criados para o
