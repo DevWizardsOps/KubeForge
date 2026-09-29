@@ -1,7 +1,7 @@
 # Guia de ensino — Helm (empacotamento)
 
 Doc de referência: `~/git/KubeForge/docs/helm.md`
-Lab interativo (prática + validação): `~/git/KubeForge/platform/girus-on-k3s/labs/lab-helm.yaml` (no Girus)
+Lab interativo (prática + validação): `~/git/KubeForge/platform/girus-on-k3s/labs/06-lab-helm.yaml` (no Girus)
 
 ## Recurso visual de abertura
 

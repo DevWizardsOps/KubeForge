@@ -15,11 +15,11 @@ num cluster de brinquedo.
 
 | # | Arquivo | Ensina |
 |---|---|---|
-| 1 | `lab-deployment.yaml` | Deployment (réplicas, imagem, labels), Service, ConfigMap como volume |
-| 2 | `lab-services-redes.yaml` | Services, ClusterIP, seletores, DNS interno |
-| 3 | `lab-configmaps-secrets.yaml` | ConfigMap/Secret, env vs volume |
-| 4 | `lab-cronjobs.yaml` | CronJob, Job, agendamento |
-| 5 | `lab-exploracao-recursos.yaml` | describe/logs/pods/deploy — inspeção de recursos |
+| 1 | `01-lab-deployment.yaml` | Deployment (réplicas, imagem, labels), Service, ConfigMap como volume |
+| 2 | `02-lab-services-redes.yaml` | Services, ClusterIP, seletores, DNS interno |
+| 3 | `03-lab-configmaps-secrets.yaml` | ConfigMap/Secret, env vs volume |
+| 4 | `04-lab-cronjobs.yaml` | CronJob, Job, agendamento |
+| 5 | `05-lab-exploracao-recursos.yaml` | describe/logs/pods/deploy — inspeção de recursos |
 
 ## Como carregar
 
@@ -30,7 +30,7 @@ export KUBECONFIG=~/.kube/config-kubeforge
 # carrega todos de uma vez:
 kubectl apply -f labs/
 # ou um por vez:
-kubectl apply -f labs/lab-deployment.yaml
+kubectl apply -f labs/01-lab-deployment.yaml
 ```
 
 Depois, na interface do Girus (`https://girus.$KUBEFORGE_HOST`),

@@ -63,13 +63,13 @@ Para QUALQUER lab, siga esta ordem — é o que faz o conceito "colar":
 
 | Lab Girus | Tema | Arquivo |
 |-----------|------|---------|
-| Deployments | criar/escalar/atualizar/rollback | `lab-deployment.yaml` |
-| Services e Redes | ClusterIP, NodePort, EndpointSlice, proxy | `lab-services-redes.yaml` |
-| ConfigMaps e Secrets | config, dados sensíveis, volumes, TLS | `lab-configmaps-secrets.yaml` |
-| CronJobs | agendamento, ciclo de vida, Jobs | `lab-cronjobs.yaml` |
-| Exploração de Recursos | namespaces, troubleshooting, limpeza | `lab-exploracao-recursos.yaml` |
-| Helm | empacotamento: chart, install/upgrade/rollback | `lab-helm.yaml` (teoria: `docs/helm.md`) |
-| Kustomize | config por ambiente sem template: base + overlays, apply -k | `lab-kustomize.yaml` |
+| Deployments | criar/escalar/atualizar/rollback | `01-lab-deployment.yaml` |
+| Services e Redes | ClusterIP, NodePort, EndpointSlice, proxy | `02-lab-services-redes.yaml` |
+| ConfigMaps e Secrets | config, dados sensíveis, volumes, TLS | `03-lab-configmaps-secrets.yaml` |
+| CronJobs | agendamento, ciclo de vida, Jobs | `04-lab-cronjobs.yaml` |
+| Exploração de Recursos | namespaces, troubleshooting, limpeza | `05-lab-exploracao-recursos.yaml` |
+| Helm | empacotamento: chart, install/upgrade/rollback | `06-lab-helm.yaml` (teoria: `docs/helm.md`) |
+| Kustomize | config por ambiente sem template: base + overlays, apply -k | `07-lab-kustomize.yaml` |
 
 > **Ao EDITAR um lab Girus**, leia primeiro a seção "Autoria de labs Girus" em
 > `references/gotchas.md` — o painel de Tarefas tem regras de render e validação
@@ -83,7 +83,7 @@ Para QUALQUER lab, siga esta ordem — é o que faz o conceito "colar":
 | 02 | Certificado TLS (cert-manager + Let's Encrypt) | `~/git/KubeForge/lab-02/README.md` | `references/lab-02-tls.md` |
 
 > Helm deixou de ser lab numerado (era LAB 03): virou lab interativo no Girus
-> (`lab-helm.yaml`); a teoria/anatomia do chart está em `docs/helm.md` e o guia de
+> (`06-lab-helm.yaml`); a teoria/anatomia do chart está em `docs/helm.md` e o guia de
 > ensino em `references/lab-03-helm.md`.
 
 > Esta tabela cresce conforme novos labs são feitos. Ao concluir um lab novo,

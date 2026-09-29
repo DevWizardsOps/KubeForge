@@ -56,8 +56,8 @@ dependência (empacotar → versionar por ambiente → automatizar → operar):
 
 | Lab | Tema | Estado |
 |---|---|---|
-| **Helm** | empacotamento — **migrado para lab interativo no Girus** (`platform/girus-on-k3s/labs/lab-helm.yaml`); teoria em `docs/helm.md` | ✅ pronto |
-| **Kustomize** | overlays sem template — **lab interativo no Girus** (`platform/girus-on-k3s/labs/lab-kustomize.yaml`) | ✅ pronto |
+| **Helm** | empacotamento — **migrado para lab interativo no Girus** (`platform/girus-on-k3s/labs/06-lab-helm.yaml`); teoria em `docs/helm.md` | ✅ pronto |
+| **Kustomize** | overlays sem template — **lab interativo no Girus** (`platform/girus-on-k3s/labs/07-lab-kustomize.yaml`) | ✅ pronto |
 | GitOps | ArgoCD / Flux | planejado (próximo lab Girus) |
 | — | Gerenciamento de Segredos (Sealed Secrets / Vault) | planejado |
 | ... | Observabilidade (Prometheus/Grafana Operator) | planejado |

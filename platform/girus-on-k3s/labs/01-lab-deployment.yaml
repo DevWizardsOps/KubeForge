@@ -15,7 +15,7 @@
 # NOTA: o pod-terminal do Girus roda '/bin/bash -c tail -f /dev/null'; alpine/k8s
 #       tem bash + kubectl + helm + curl, cobrindo os passos que pedem shell.
 #
-# Aplicar:  kubectl apply -f labs/lab-deployment.yaml   (namespace girus)
+# Aplicar:  kubectl apply -f labs/01-lab-deployment.yaml   (namespace girus)
 # ============================================================================
 apiVersion: v1
 kind: ConfigMap

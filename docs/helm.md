@@ -2,7 +2,7 @@
 
 > Material de referência da trilha [KubeForge](../README.md) sobre **Helm**. O
 > **lab interativo** de Helm agora roda dentro da plataforma **Girus** (Fase 1/2)
-> — ver [`platform/girus-on-k3s/labs/lab-helm.yaml`](../platform/girus-on-k3s/labs/lab-helm.yaml).
+> — ver [`platform/girus-on-k3s/labs/06-lab-helm.yaml`](../platform/girus-on-k3s/labs/06-lab-helm.yaml).
 > Este documento é o "porquê" e a teoria (conceitos, anatomia do chart, sintaxe
 > de template) que complementam a prática guiada no Girus.
 >
@@ -164,7 +164,7 @@ helm history whoami                         # revisão 3 = rollback registrado
 ## 10. Prática guiada e validação automática (no Girus)
 
 A validação automática deste conteúdo agora vive no **lab interativo de Helm da
-plataforma Girus** — [`platform/girus-on-k3s/labs/lab-helm.yaml`](../platform/girus-on-k3s/labs/lab-helm.yaml).
+plataforma Girus** — [`platform/girus-on-k3s/labs/06-lab-helm.yaml`](../platform/girus-on-k3s/labs/06-lab-helm.yaml).
 Lá o aluno exercita `helm create → install → upgrade → rollback → uninstall` no
 terminal do browser e cada tarefa é validada na hora (✅/❌), sem precisar de
 `verify.sh` local. Este documento é a referência teórica; o Girus é a prática.
