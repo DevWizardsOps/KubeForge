@@ -20,7 +20,7 @@ metadata:
 data:
   lab.yaml: |
     name: kubernetes-helm
-    title: "Lab Helm — Empacotando aplicações no Kubernetes"
+    title: "Lab 6 - Helm Empacotando aplicações no Kubernetes"
     description: "Aprenda o gerenciador de pacotes do Kubernetes. Você vai empacotar uma aplicação como um chart, instalar um release, atualizar valores sem reescrever YAML, consultar o histórico e reverter com um comando — o ciclo de vida que o kubectl apply de YAML solto não entrega."
     duration: 30m
     image: "alpine/k8s:1.33.1"

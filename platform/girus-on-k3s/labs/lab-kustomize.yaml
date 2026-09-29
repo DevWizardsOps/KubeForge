@@ -23,7 +23,7 @@ metadata:
 data:
   lab.yaml: |
     name: kubernetes-kustomize
-    title: "Lab Kustomize — Configuração por ambiente sem templates"
+    title: "Lab 7 - Kustomize Configuração por ambiente sem templates"
     description: "Aprenda o Kustomize, o gerenciador de configuração declarativo embutido no kubectl. Em vez de um template com variáveis (como o Helm), você mantém uma base e aplica sobreposições (overlays) por ambiente — patches que o Kubernetes combina na hora. Você vai criar uma base, derivar um overlay de produção e aplicá-lo com kubectl apply -k."
     duration: 30m
     image: "alpine/k8s:1.33.1"
