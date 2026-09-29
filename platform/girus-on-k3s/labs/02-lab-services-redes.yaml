@@ -9,6 +9,10 @@
 #   - image do ambiente do aluno trocada para 'alpine/k8s:1.33.1' (multi-arch, ARM64).
 #     Este lab não usa Kind aninhado — roda kubectl contra o cluster hospedeiro
 #     (o nosso k3s) via a ServiceAccount girus-sa.
+#   - Removidas as crases inline do texto dos steps (o frontend do Girus renderiza
+#     qualquer trecho em crase como chip copiável isolado). Comandos completos seguem
+#     como chip; negrito (**...**) renderiza como texto e foi mantido.
+#   - Adicionados links da documentação oficial do Kubernetes nos tips.
 #
 # NOTA: o pod-terminal do Girus roda '/bin/bash -c tail -f /dev/null'; alpine/k8s
 #       tem bash + kubectl + helm + curl, cobrindo os passos que pedem shell.
@@ -32,22 +36,25 @@ data:
         description: "Configure um namespace para isolar os recursos criados durante este laboratório, compreendendo como os namespaces proporcionam isolamento lógico no Kubernetes."
         steps:
           - "No Kubernetes, **namespaces** fornecem uma forma de segmentar um cluster em ambientes virtuais isolados. Eles são fundamentais para organizar recursos em equipes grandes, separar ambientes (dev, teste, produção) ou isolar projetos."
-          - "Vamos criar um namespace dedicado para este laboratório usando o comando `kubectl create namespace`:"
+          - "Vamos criar um namespace dedicado para este laboratório com o comando kubectl create namespace:"
           - "`kubectl create namespace servicos-lab`"
           - "Este comando instrui a API do Kubernetes a criar um novo namespace chamado 'servicos-lab'. O namespace atua como um escopo virtual dentro do cluster, onde os recursos são nomeados de forma única."
           - "Vamos verificar se o namespace foi criado corretamente listando todos os namespaces disponíveis:"
           - "`kubectl get namespaces`"
           - "Você deve ver o namespace 'servicos-lab' na lista, junto com os namespaces padrão como 'default', 'kube-system' e outros."
-          - "Neste laboratório, vamos passar o namespace explicitamente em cada comando com a flag `-n servicos-lab` — é a forma que sempre funciona, inclusive neste terminal."
-          - "Observação: o terminal do lab não tem um contexto nomeado configurado, então `kubectl config set-context --current` retorna 'no current context is set'. Por isso usamos `-n servicos-lab` diretamente nos comandos a seguir, em vez de definir um namespace padrão."
-          - "Se quiser mesmo assim definir um padrão, primeiro descubra o cluster/usuário do kubeconfig com `kubectl config view --minify` e crie um contexto — mas para este lab isso não é necessário."
+          - "Neste laboratório, vamos passar o namespace explicitamente em cada comando com a flag -n servicos-lab — é a forma que sempre funciona, inclusive neste terminal."
+          - "Observação: o terminal do lab não tem um contexto nomeado configurado, então kubectl config set-context --current retorna 'no current context is set'. Por isso usamos -n servicos-lab diretamente nos comandos a seguir, em vez de definir um namespace padrão."
+          - "Se quiser mesmo assim definir um padrão, primeiro descubra o cluster/usuário do kubeconfig com kubectl config view --minify e crie um contexto — mas para este lab isso não é necessário."
         tips:
           - type: "info"
             title: "Namespaces no Kubernetes"
             content: "Os namespaces fornecem isolamento lógico, não físico. Recursos como nodes e PersistentVolumes não são isolados por namespace. Alguns recursos, como Nodes, são globais e não pertencem a nenhum namespace."
           - type: "tip"
             title: "Visualizar o Namespace Atual"
-            content: "O comando `kubectl config view --minify | grep namespace:` mostra o namespace atual configurado no seu contexto. Se não houver namespace configurado, o comando não mostrará nada e o 'default' será usado."
+            content: "O comando kubectl config view --minify | grep namespace: mostra o namespace atual configurado no seu contexto. Se não houver namespace configurado, o comando não mostrará nada e o 'default' será usado."
+          - type: "info"
+            title: "Documentação oficial"
+            content: "Namespaces: [kubernetes.io/docs/concepts/overview/working-with-objects/namespaces](https://kubernetes.io/docs/concepts/overview/working-with-objects/namespaces/)"
         validation:
           - command: "kubectl get ns servicos-lab -o jsonpath='{.metadata.name}' 2>/dev/null || echo 'Namespace não encontrado'"
             expectedOutput: "servicos-lab"
@@ -59,7 +66,7 @@ data:
           - "Antes de discutirmos serviços, precisamos criar alguns Pods para expor. Em aplicações reais, geralmente temos vários componentes que precisam se comunicar entre si, como frontend e backend."
           - "**Deployments** são recursos do Kubernetes que gerenciam a criação e atualização de Pods de forma declarativa. Vamos criar um Deployment para o backend da nossa aplicação:"
           - "`kubectl create deployment backend-app --image=nginxdemos/hello:0.3 --port=80 --replicas=2 -n servicos-lab`"
-          - "Este comando cria um Deployment chamado 'backend-app' com 2 réplicas (2 Pods idênticos) usando a imagem 'nginxdemos/hello:0.3', que é uma imagem Nginx com uma página personalizada. A flag `--port=80` indica que o container expõe a porta 80."
+          - "Este comando cria um Deployment chamado 'backend-app' com 2 réplicas (2 Pods idênticos) usando a imagem 'nginxdemos/hello:0.3', que é uma imagem Nginx com uma página personalizada. A flag --port=80 indica que o container expõe a porta 80."
           - "Vamos verificar se o Deployment foi criado e seus Pods estão em execução:"
           - "`kubectl get deployments -n servicos-lab`"
           - "Você deve ver o Deployment 'backend-app' com 2 réplicas disponíveis."
@@ -74,7 +81,7 @@ data:
           - "Agora você deve ver dois Deployments: 'backend-app' com 2 réplicas e 'frontend-app' com 1 réplica."
           - "Para demonstrar como os Pods recebem IPs internos no Kubernetes, vamos listar os Pods com seus IPs:"
           - "`kubectl get pods -o wide -n servicos-lab`"
-          - "A flag `-o wide` mostra informações adicionais, incluindo os IPs dos Pods. Observe que cada Pod recebe um IP único dentro da rede do cluster. Estes IPs são efêmeros - quando um Pod é recriado, ele recebe um novo IP."
+          - "A flag -o wide mostra informações adicionais, incluindo os IPs dos Pods. Observe que cada Pod recebe um IP único dentro da rede do cluster. Estes IPs são efêmeros - quando um Pod é recriado, ele recebe um novo IP."
         tips:
           - type: "info"
             title: "Rede de Pods no Kubernetes"
@@ -84,7 +91,7 @@ data:
             content: "Embora seja possível se comunicar diretamente com um Pod usando seu IP, esta abordagem é desencorajada porque os IPs dos Pods são efêmeros. Em vez disso, use Serviços para descoberta e comunicação estável."
           - type: "tip"
             title: "Escalando Deployments"
-            content: "Você pode alterar o número de réplicas de um Deployment com `kubectl scale deployment <nome> --replicas=<número>`. O Kubernetes criará ou removerá Pods para atingir o número desejado."
+            content: "Você pode alterar o número de réplicas de um Deployment com kubectl scale deployment <nome> --replicas=<número>. O Kubernetes criará ou removerá Pods para atingir o número desejado."
         validation:
           - command: "kubectl get pods -n servicos-lab -l app=backend-app --no-headers | wc -l"
             expectedOutput: "2"
@@ -101,20 +108,16 @@ data:
           - "O tipo mais básico de Serviço é o **ClusterIP**, que expõe o Serviço em um IP interno ao cluster. Este tipo é ideal para comunicação interna entre componentes da aplicação."
           - "Vamos criar um Serviço ClusterIP para o backend:"
           - "`kubectl expose deployment backend-app --name=backend-service --port=80 --target-port=80 --type=ClusterIP -n servicos-lab`"
-          - "Este comando cria um Serviço chamado 'backend-service' que expõe o Deployment 'backend-app' na porta 80. Vamos entender cada parâmetro:"
-          - "- `--name=backend-service`: Define o nome do Serviço"
-          - "- `--port=80`: A porta em que o Serviço será exposto dentro do cluster"
-          - "- `--target-port=80`: A porta do Pod alvo para a qual o tráfego será redirecionado"
-          - "- `--type=ClusterIP`: O tipo de Serviço (ClusterIP é o padrão, por isso é opcional)"
+          - "Este comando cria um Serviço chamado 'backend-service' que expõe o Deployment 'backend-app' na porta 80. Entenda cada parâmetro: --name define o nome do Serviço; --port é a porta em que o Serviço será exposto dentro do cluster; --target-port é a porta do Pod alvo para a qual o tráfego será redirecionado; --type define o tipo de Serviço (ClusterIP é o padrão, por isso é opcional)."
           - "Vamos verificar o Serviço criado:"
           - "`kubectl get services -n servicos-lab`"
           - "Você verá o Serviço 'backend-service' com um IP interno (ClusterIP) atribuído. Este IP é estático durante o ciclo de vida do Serviço."
-          - "Podemos obter mais detalhes sobre o Serviço com o comando 'describe':"
+          - "Podemos obter mais detalhes sobre o Serviço com o comando describe:"
           - "`kubectl describe service backend-service -n servicos-lab`"
           - "Observe que o Serviço tem um conjunto de 'Endpoints' que são os IPs dos Pods individuais de backend. O Kubernetes mantém esta lista atualizada automaticamente à medida que Pods são criados ou removidos."
           - "Agora, vamos testar o acesso ao backend a partir de outro Pod. Vamos usar o Pod do frontend para enviar uma requisição HTTP ao backend:"
           - "`kubectl exec -it $(kubectl get pod -l app=frontend-app -o jsonpath='{.items[0].metadata.name}' -n servicos-lab) -n servicos-lab -- curl -s backend-service`"
-          - "Este comando executa 'curl' dentro do Pod frontend para acessar o 'backend-service'. Observe que usamos o nome do Serviço como hostname, não seu IP. O Kubernetes configura DNS interno automaticamente para resolver nomes de Serviços."
+          - "Este comando executa curl dentro do Pod frontend para acessar o 'backend-service'. Observe que usamos o nome do Serviço como hostname, não seu IP. O Kubernetes configura DNS interno automaticamente para resolver nomes de Serviços."
           - "O resultado mostrará a página HTML retornada pelo backend. O Kubernetes balanceou a requisição para um dos Pods do backend."
         tips:
           - type: "info"
@@ -124,8 +127,8 @@ data:
             title: "DNS do Kubernetes"
             content: "O Kubernetes configura automaticamente nomes DNS para Serviços. Dentro do mesmo namespace, Pods podem acessar um Serviço simplesmente pelo nome. Entre namespaces, use 'nome-servico.namespace.svc.cluster.local'."
           - type: "info"
-            title: "Seletores e Endpoints"
-            content: "Os Serviços usam seletores de labels para identificar quais Pods devem receber tráfego. Os Endpoints são uma lista de todos os IPs e portas dos Pods que correspondem ao seletor do Serviço."
+            title: "Documentação oficial"
+            content: "Service: [kubernetes.io/docs/concepts/services-networking/service](https://kubernetes.io/docs/concepts/services-networking/service/)"
         validation:
           - command: "kubectl get service backend-service -n servicos-lab -o jsonpath='{.spec.type}' 2>/dev/null || echo ''"
             expectedOutput: "ClusterIP"
@@ -168,9 +171,9 @@ data:
           - type: "info"
             title: "Arquitetura Comum"
             content: "Um padrão comum no Kubernetes é ter serviços de frontend expostos externamente com NodePort ou LoadBalancer, enquanto serviços de backend usam ClusterIP para comunicação interna."
-          - type: "tip"
-            title: "Encadeamento de Serviços"
-            content: "Os Serviços podem se comunicar entre si usando seus nomes DNS. Isso permite criar arquiteturas em camadas onde cada componente se concentra em sua função específica."
+          - type: "info"
+            title: "Documentação oficial"
+            content: "Publicar Serviços (tipos de Service): [kubernetes.io/docs/concepts/services-networking/service/#publishing-services-service-types](https://kubernetes.io/docs/concepts/services-networking/service/#publishing-services-service-types)"
         validation:
           - command: "kubectl get service frontend-service -n servicos-lab -o jsonpath='{.spec.type}' 2>/dev/null || echo ''"
             expectedOutput: "NodePort"
@@ -186,7 +189,7 @@ data:
           - "No Kubernetes, a exclusão de recursos pode ser feita de várias maneiras. Podemos excluir recursos individualmente ou excluir o namespace, que remove todos os recursos dentro dele."
           - "Vamos listar todos os recursos criados neste laboratório:"
           - "`kubectl get all -n servicos-lab`"
-          - "O comando `kubectl get all` mostra a maioria dos recursos do Kubernetes, incluindo Pods, Serviços, Deployments, etc., mas não todos (por exemplo, não mostra ConfigMaps)."
+          - "O comando kubectl get all mostra a maioria dos recursos do Kubernetes, incluindo Pods, Serviços, Deployments, etc., mas não todos (por exemplo, não mostra ConfigMaps)."
           - "Vamos começar excluindo os Serviços:"
           - "`kubectl delete service frontend-service backend-service -n servicos-lab`"
           - "Este comando exclui os dois Serviços que criamos. Observe que a exclusão de um Serviço não afeta os Pods subjacentes - eles continuam em execução."
@@ -213,7 +216,7 @@ data:
             content: "O Kubernetes usa o conceito de 'propriedade' para gerenciar a exclusão em cascata. Quando um recurso 'pai' (como um Deployment) é excluído, todos os recursos 'filhos' (como os Pods) também são excluídos automaticamente."
           - type: "tip"
             title: "Verificação Antes da Exclusão"
-            content: "Antes de excluir recursos, especialmente em produção, use `kubectl get <recurso> -o yaml` ou `kubectl describe <recurso>` para verificar se está excluindo os recursos corretos."
+            content: "Antes de excluir recursos, especialmente em produção, use kubectl get <recurso> -o yaml ou kubectl describe <recurso> para verificar se está excluindo os recursos corretos."
         validation:
           - command: "kubectl get namespace servicos-lab 2>/dev/null || echo 'Namespace removido com sucesso'"
             expectedOutput: "Namespace removido com sucesso"
