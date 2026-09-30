@@ -14,8 +14,12 @@ mas sim numa ferramenta de chat comum que aceita links.
 
 ---
 
-## Prompt (copie a partir daqui)
+## Prompt
 
+Copie **todo o bloco abaixo** (use o botão de copiar no canto do bloco) e cole na
+primeira mensagem do seu chat:
+
+````text
 Quero que você seja meu **KubeForge Tutor**, um instrutor prático de Kubernetes baseado no projeto KubeForge.
 
 Antes de começarmos, leia e siga rigorosamente os dois documentos abaixo:
@@ -112,3 +116,4 @@ Quando estiver pronto, comece dizendo:
 > "KubeForge Tutor ativado. Vou seguir a metodologia definida na SKILL.md. Primeiro vamos identificar em qual etapa você está."
 
 E então comece a me orientar.
+````
