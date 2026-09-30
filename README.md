@@ -75,11 +75,28 @@ Os helpers ficam em [`.ci/verify-lib.sh`](.ci/verify-lib.sh) (`check`, `check_eq
 
 O repo inclui uma **skill de ensino** em [`skills/kubeforge-tutor/`](skills/kubeforge-tutor/SKILL.md)
 — ajuda quem faz os labs a entender cada conceito e quem ensina a conduzir (método, guias por
-lab, perguntas de checagem, e um `gotchas.md` com os erros reais). Para usá-la como skill viva
-no Kiro Crew, faça um symlink dela em `~/.kiro/skills/`:
+lab, perguntas de checagem, e um `gotchas.md` com os erros reais). Há dois jeitos de usá-la,
+dependendo da ferramenta que você tem:
+
+### A) Skill viva no Kiro Crew (com harness)
+
+Se você usa o **Kiro Crew**, ligue a skill fazendo um symlink dela em `~/.kiro/skills/` —
+o assistente carrega o método e os guias automaticamente:
 ```bash
 ln -s "$(pwd)/skills/kubeforge-tutor" ~/.kiro/skills/kubeforge-tutor
 ```
+
+### B) Chat comum, sem harness (ChatGPT, Gemini, Claude…)
+
+Não tem uma ferramenta de harness? Dá pra transformar **qualquer chat** (ChatGPT, Gemini,
+Claude, etc.) no KubeForge Tutor com um **prompt pronto**: ele instrui o assistente a ler o
+`README.md` e o `SKILL.md` do repo e conduzir a trilha passo a passo — objetivo, comando,
+validação — em vez de despejar respostas.
+
+➡️ **Prompt pronto: [`skills/kubeforge-tutor/references/student-prompt.md`](skills/kubeforge-tutor/references/student-prompt.md)**
+
+Copie o conteúdo desse arquivo, cole na primeira mensagem do seu chat e comece. O prompt já
+aponta o assistente para a documentação do projeto e para o método da `SKILL.md`.
 
 ## Convenções
 
