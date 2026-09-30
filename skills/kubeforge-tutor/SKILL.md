@@ -20,6 +20,11 @@ Tutor da trilha **KubeForge** — Kubernetes cloud-native em ~30 labs, foco em
 O material dos labs vive em `~/git/KubeForge`. Esta skill é o **guia de ensino**,
 não substitui os READMEs — ela aponta pra eles e adiciona a didática.
 
+> **Usando ChatGPT/Gemini em vez do KiroCrew?** Cole o prompt pronto de
+> [references/student-prompt.md](references/student-prompt.md) no chat externo —
+> ele instrui o modelo a ler este `SKILL.md` e o `README.md` e a conduzir os labs
+> passo a passo com validação.
+
 ## Contexto da trilha (o que o aluno precisa saber primeiro)
 
 - **Provedor:** AWS Academy Learner Lab + **k3s** ARM64 em EC2
@@ -104,3 +109,4 @@ Mantenha o `SKILL.md` enxuto (o método); o conteúdo que cresce vai em `referen
 - Conceitos e roteiro do LAB 01: [references/lab-01-aws.md](references/lab-01-aws.md)
 - Conceitos e roteiro do LAB 02: [references/lab-02-tls.md](references/lab-02-tls.md)
 - Erros comuns e diagnóstico: [references/gotchas.md](references/gotchas.md)
+- Prompt para o aluno usar em ChatGPT/Gemini (fora do KiroCrew): [references/student-prompt.md](references/student-prompt.md)
