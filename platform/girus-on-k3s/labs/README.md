@@ -13,13 +13,33 @@ num cluster de brinquedo.
 
 ## Ordem sugerida
 
+Os arquivos usam dois prefixos de sequência independentes — `kube-NN` (fundamentos
+de Kubernetes) e `linux-NN` (fundamentos de Linux, **opcionais**) — para que as duas
+trilhas cresçam sem colidir na numeração.
+
+### Trilha Kubernetes (`kube-NN`)
+
 | # | Arquivo | Ensina |
 |---|---|---|
-| 1 | `01-lab-deployment.yaml` | Deployment (réplicas, imagem, labels), Service, ConfigMap como volume |
-| 2 | `02-lab-services-redes.yaml` | Services, ClusterIP, seletores, DNS interno |
-| 3 | `03-lab-configmaps-secrets.yaml` | ConfigMap/Secret, env vs volume |
-| 4 | `04-lab-cronjobs.yaml` | CronJob, Job, agendamento |
-| 5 | `05-lab-exploracao-recursos.yaml` | describe/logs/pods/deploy — inspeção de recursos |
+| 1 | `kube-01-deployment.yaml` | Deployment (réplicas, imagem, labels), Service, ConfigMap como volume |
+| 2 | `kube-02-services-redes.yaml` | Services, ClusterIP, seletores, DNS interno |
+| 3 | `kube-03-configmaps-secrets.yaml` | ConfigMap/Secret, env vs volume |
+| 4 | `kube-04-cronjobs.yaml` | CronJob, Job, agendamento |
+| 5 | `kube-05-exploracao-recursos.yaml` | describe/logs/pods/deploy — inspeção de recursos |
+| 6 | `kube-06-helm.yaml` | Helm — chart, install/upgrade/rollback |
+| 7 | `kube-07-kustomize.yaml` | Kustomize — base + overlays, `apply -k` |
+| 8 | `kube-08-volumes-persistentes.yaml` | PV/PVC, hostPath (RWO), NFS (RWX) |
+
+### Trilha Linux (`linux-NN`, opcional)
+
+Labs de fundamentos de **Linux** (título prefixado com `[Opcional]`), adaptados para
+rodar na imagem `alpine/k8s:1.33.1` (ARM64) usada no terminal do aluno.
+
+| # | Arquivo | Ensina |
+|---|---|---|
+| 1 | `linux-01-processamento-texto.yaml` | grep, sed, awk — busca, substituição, colunas |
+| 2 | `linux-02-permissoes-arquivos.yaml` | chmod, octal, umask, propriedade |
+| 3 | `linux-03-shell-script.yaml` | Bash — variáveis, argumentos, loops, condicionais, funções |
 
 ## Como carregar
 
@@ -30,7 +50,7 @@ export KUBECONFIG=~/.kube/config-kubeforge
 # carrega todos de uma vez:
 kubectl apply -f labs/
 # ou um por vez:
-kubectl apply -f labs/01-lab-deployment.yaml
+kubectl apply -f labs/kube-01-deployment.yaml
 ```
 
 Depois, na interface do Girus (`https://girus.$KUBEFORGE_HOST`),

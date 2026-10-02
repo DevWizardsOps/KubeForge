@@ -80,18 +80,23 @@ kubectl -n girus get secret girus-auth-password -o jsonpath='{.data.password}' |
 ## Carregar os labs
 
 Os labs do Girus são **ConfigMaps** (`kind: ConfigMap` com o `lab.yaml` dentro),
-e os nossos vivem em [`labs/`](labs/). São **7 labs** adaptados/criados para o
-nosso k3s ARM64 e validados no cluster real:
+e os nossos vivem em [`labs/`](labs/). São **11 labs** adaptados/criados para o
+nosso k3s ARM64 e validados no cluster real — **8 de Kubernetes** (`kube-NN`) e
+**3 de Linux opcionais** (`linux-NN`):
 
 | # | Arquivo | Tema |
 |---|---------|------|
-| 1 | `labs/01-lab-deployment.yaml` | Deployments — criar, escalar, atualizar, rollback |
-| 2 | `labs/02-lab-services-redes.yaml` | Services e Redes — ClusterIP, NodePort, EndpointSlice, proxy |
-| 3 | `labs/03-lab-configmaps-secrets.yaml` | ConfigMaps e Secrets — config, dados sensíveis, volumes, TLS |
-| 4 | `labs/04-lab-cronjobs.yaml` | CronJobs — agendamento, ciclo de vida, Jobs |
-| 5 | `labs/05-lab-exploracao-recursos.yaml` | Exploração — namespaces, troubleshooting, limpeza seletiva |
-| 6 | `labs/06-lab-helm.yaml` | Helm — empacotamento: chart, install/upgrade/rollback (teoria em [`docs/helm.md`](../../docs/helm.md)) |
-| 7 | `labs/07-lab-kustomize.yaml` | Kustomize — configuração por ambiente sem templates: base + overlays, `apply -k` |
+| 1 | `labs/kube-01-deployment.yaml` | Deployments — criar, escalar, atualizar, rollback |
+| 2 | `labs/kube-02-services-redes.yaml` | Services e Redes — ClusterIP, NodePort, EndpointSlice, proxy |
+| 3 | `labs/kube-03-configmaps-secrets.yaml` | ConfigMaps e Secrets — config, dados sensíveis, volumes, TLS |
+| 4 | `labs/kube-04-cronjobs.yaml` | CronJobs — agendamento, ciclo de vida, Jobs |
+| 5 | `labs/kube-05-exploracao-recursos.yaml` | Exploração — namespaces, troubleshooting, limpeza seletiva |
+| 6 | `labs/kube-06-helm.yaml` | Helm — empacotamento: chart, install/upgrade/rollback (teoria em [`docs/helm.md`](../../docs/helm.md)) |
+| 7 | `labs/kube-07-kustomize.yaml` | Kustomize — configuração por ambiente sem templates: base + overlays, `apply -k` |
+| 8 | `labs/kube-08-volumes-persistentes.yaml` | Volumes — PV/PVC, hostPath (RWO), NFS (RWX) |
+| — | `labs/linux-01-processamento-texto.yaml` | **[Opcional]** Linux — grep, sed, awk |
+| — | `labs/linux-02-permissoes-arquivos.yaml` | **[Opcional]** Linux — permissões, chmod, umask |
+| — | `labs/linux-03-shell-script.yaml` | **[Opcional]** Linux — shell script Bash |
 
 **Suba todos os labs de uma vez** (o `-f labs/` aplica o diretório inteiro) e
 recarregue o backend para ele detectá-los:
@@ -103,9 +108,9 @@ kubectl -n girus rollout restart deployment/girus-backend
 kubectl -n girus rollout status  deployment/girus-backend --timeout=90s
 ```
 
-Depois disso, os 7 labs aparecem na UI do Girus e você vai fazendo cada um pela
+Depois disso, os 11 labs aparecem na UI do Girus e você vai fazendo cada um pela
 plataforma. Para **reaplicar um lab** que você editou, aplique só ele
-(`kubectl apply -f labs/06-lab-helm.yaml`) + o mesmo `rollout restart`.
+(`kubectl apply -f labs/kube-06-helm.yaml`) + o mesmo `rollout restart`.
 
 > Depois de (re)aplicar labs, **inicie uma sessão nova** do lab na UI — o Girus
 > tira um snapshot da validação no início da sessão; recarregar a aba não atualiza
