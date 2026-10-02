@@ -87,7 +87,28 @@ data:
         steps:
           - "**Criando um CronJob de Exemplo:**"
           - "Crie um CronJob básico que exibe a data e hora a cada minuto. Este exemplo ajudará a entender o ciclo de vida de um CronJob e como monitorá-lo."
-          - "Um CronJob declarativo (YAML) teria os campos: schedule (a expressão cron, ex. */1 * * * * para cada minuto), successfulJobsHistoryLimit (quantas execuções bem-sucedidas manter), failedJobsHistoryLimit (quantas execuções com falha manter), concurrencyPolicy (Allow, Forbid ou Replace) e jobTemplate (o modelo do Job criado a cada execução, com a imagem e o comando). O manifesto completo de referência está na documentação do repositório."
+          - "Um CronJob declarativo (YAML) tem os campos abaixo. Este é o manifesto completo de referência (mostrado para leitura — não precisa digitar; mais adiante você cria o mesmo objeto com um comando imperativo):"
+          - |
+            ```yaml
+            apiVersion: batch/v1
+            kind: CronJob
+            metadata:
+              name: hello
+            spec:
+              schedule: "*/1 * * * *"          # expressão cron: a cada minuto
+              successfulJobsHistoryLimit: 3    # quantas execuções OK manter
+              failedJobsHistoryLimit: 1        # quantas execuções com falha manter
+              concurrencyPolicy: Allow         # Allow | Forbid | Replace
+              jobTemplate:                     # o molde do Job criado a cada execução
+                spec:
+                  template:
+                    spec:
+                      restartPolicy: OnFailure # OnFailure | Never
+                      containers:
+                      - name: hello
+                        image: busybox
+                        command: ["/bin/sh", "-c", "date; echo 'Ola do Kubernetes CronJob'"]
+            ```
           - "Entenda os principais campos: schedule é a expressão cron que define quando o Job roda; successfulJobsHistoryLimit e failedJobsHistoryLimit controlam quantos Jobs anteriores (bem-sucedidos e com falha) são mantidos; concurrencyPolicy define como lidar com uma nova execução quando a anterior ainda roda — Allow (padrão, permite simultâneas), Forbid (impede nova enquanto a atual roda) ou Replace (cancela a atual e inicia outra); jobTemplate é o modelo do Job; restartPolicy define como lidar com falhas de Pods (OnFailure ou Never)."
           - "No terminal web, digitar YAML indentado à mão é frágil. Crie este CronJob de forma prática com o comando imperativo kubectl create cronjob, que monta o objeto a partir de flags simples. Copie e execute:"
           - "`kubectl create cronjob hello --image=busybox --schedule=\"*/1 * * * *\" -- /bin/sh -c 'date; echo \"Ola do Kubernetes CronJob\"'`"

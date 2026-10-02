@@ -153,6 +153,19 @@ data:
           - "Dica: crie de forma imperativa (evita YAML multi-linha e acentos):"
           - "`kubectl create configmap nginx-config -n challenge-namespace --from-literal=index.html=desafio-ok`"
           - "Modifique o deployment para montar o ConfigMap como um volume em /usr/share/nginx/html/"
+          - "O que você vai adicionar ao Pod do deployment são duas seções (mostradas para leitura — não precisa digitar): um volume que aponta para o ConfigMap, e um volumeMount que o monta no caminho do nginx:"
+          - |
+            ```yaml
+            # dentro de spec.template.spec do deployment:
+            volumes:
+            - name: config-volume
+              configMap:
+                name: nginx-config
+            # dentro de spec.template.spec.containers[0]:
+            volumeMounts:
+            - name: config-volume
+              mountPath: /usr/share/nginx/html/
+            ```
           - "Dica: monte o volume com um patch (evita editar YAML no terminal). Comando de referência (uma linha, pode copiar):"
           - "`kubectl patch deployment nginx-deployment -n challenge-namespace --type json -p '[{\"op\":\"add\",\"path\":\"/spec/template/spec/volumes\",\"value\":[{\"name\":\"config-volume\",\"configMap\":{\"name\":\"nginx-config\"}}]},{\"op\":\"add\",\"path\":\"/spec/template/spec/containers/0/volumeMounts\",\"value\":[{\"name\":\"config-volume\",\"mountPath\":\"/usr/share/nginx/html/\"}]}]'`"
           - "Verifique se a configuração foi aplicada corretamente."
