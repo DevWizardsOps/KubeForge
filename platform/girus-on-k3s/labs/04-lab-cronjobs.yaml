@@ -206,7 +206,37 @@ data:
         steps:
           - "**Cenário: Backup de Banco de Dados**"
           - "Neste exercício, vamos criar um CronJob que simula o backup diário de um banco de dados às 2h da manhã. Como não temos um banco de dados real, vamos simular este processo."
-          - "Um CronJob de backup declarativo (YAML) usaria, além do schedule 0 2 * * * (2h da manhã), campos avançados: startingDeadlineSeconds (prazo máximo, em segundos, para o Job ainda iniciar após o horário agendado), definição de resources (requests e limits de CPU e memória) e um script de várias etapas no jobTemplate. O manifesto completo de referência está na documentação do repositório."
+          - "Um CronJob de backup declarativo (YAML) usa, além do schedule 0 2 * * * (2h da manhã), campos avançados. Este é o manifesto completo de referência (mostrado para leitura — não precisa digitar; mais adiante você cria o mesmo objeto com um comando imperativo):"
+          - |
+            ```yaml
+            apiVersion: batch/v1
+            kind: CronJob
+            metadata:
+              name: database-backup
+            spec:
+              schedule: "0 2 * * *"            # todo dia às 2h da manhã
+              startingDeadlineSeconds: 300     # se perder o horário, ainda pode iniciar em até 5min
+              concurrencyPolicy: Forbid        # não deixa dois backups rodarem juntos
+              jobTemplate:
+                spec:
+                  template:
+                    spec:
+                      restartPolicy: OnFailure
+                      containers:
+                      - name: backup
+                        image: busybox
+                        resources:              # limita o que o Job consome
+                          requests: { cpu: "50m", memory: "64Mi" }
+                          limits:   { cpu: "100m", memory: "128Mi" }
+                        command:
+                        - /bin/sh
+                        - -c
+                        - |
+                          echo "Iniciando backup em $(date)"
+                          echo "Criando dump..."; sleep 3
+                          echo "Compactando..."; sleep 2
+                          echo "Backup concluido em $(date)"
+            ```
           - "Entenda os campos avançados: startingDeadlineSeconds é o tempo máximo após o horário agendado em que o Job ainda pode começar; a definição de resources (CPU e memória) limita o que o Job pode consumir; e o script mais complexo simula várias etapas de um processo de backup."
           - "No terminal web, digitar YAML indentado à mão é frágil. Crie o CronJob de forma prática com o comando imperativo, que simula as etapas do backup no comando após o separador --:"
           - "`kubectl create cronjob database-backup --image=busybox --schedule=\"0 2 * * *\" -- /bin/sh -c 'echo \"Iniciando backup em $(date)\"; echo \"Criando dump...\"; sleep 3; echo \"Compactando...\"; sleep 2; echo \"Backup concluido em $(date)\"'`"
