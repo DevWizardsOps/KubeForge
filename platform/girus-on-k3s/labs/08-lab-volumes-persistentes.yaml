@@ -1,0 +1,177 @@
+# ============================================================================
+# Lab GIRUS — Volumes Persistentes: hostPath (RWO) e NFS (RWX)  (k3s ARM64)
+# ============================================================================
+# AUTORIA: KubeForge (conteúdo próprio, não é port de lab da LINUXtips).
+#          Segue o MESMO schema de string dos labs portados (steps=[]string,
+#          validação por igualdade exata ==, comandos imperativos).
+#
+# PRÉ-REQUISITO DE INFRA (admin sobe UMA VEZ, não o aluno):
+#   kubectl apply -f labs/infra/nfs-server.yaml
+#   Sobe o Pod servidor NFS (ubuntu+nfs-kernel-server, ARM64) no master, com
+#   Service HEADLESS 'nfs-server.nfs-system.svc.cluster.local'. Ver o cabeçalho
+#   daquele arquivo para o PORQUÊ de cada decisão (headless, hostPath, single-node).
+#
+# DECISÕES DE DESENHO (ditadas por RBAC + ambiente, tudo comprovado em probe):
+#   - A SA restrita do aluno (lab-test-user:default) PODE: pods, pvc, deployments,
+#     services, namespaces. NÃO PODE: persistentvolumes, storageclasses (cluster-scoped).
+#     Logo o lab só exercita o que a SA pode criar.
+#   - Parte NFS: o volume 'nfs:' NATIVO do k8s NÃO funciona aqui (kubelet sem
+#     /sbin/mount.nfs no host). A via que funciona SEM tocar no host é o Pod-cliente
+#     montar NFS DENTRO do container (privilegiado, trazendo o próprio nfs-common).
+#     Sem PodSecurity enforce no cluster (medido) a SA do aluno cria Pod privilegiado.
+#   - NFS v3 (não v4): v3 montou limpo; v4 exigia fsid=0 e travava. v3 dispensa
+#     fsid. Mount precisa de '-o nolock' (clientes alpine/busybox não rodam rpc.statd).
+#   - Mount pelo NOME DNS headless (não ClusterIP: o DNAT do kube-proxy travava o
+#     handshake NFS; o A record headless resolve direto pro podIP, rota que o NFS aceita).
+#
+# IMAGEM DO ALUNO: alpine/k8s:1.33.1 (bash+kubectl+helm, multi-arch ARM64).
+# ============================================================================
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: kubernetes-volumes-persistentes-lab
+  namespace: girus
+  labels:
+    app: girus-lab-template
+data:
+  lab.yaml: |
+    name: kubernetes-volumes-persistentes
+    title: "Lab 8 — Volumes Persistentes: hostPath (RWO) e NFS (RWX)"
+    description: "Aprenda armazenamento persistente no Kubernetes na prática. Você vai criar PersistentVolumeClaims com a StorageClass padrão (local-path), entender o modo ReadWriteOnce e o binding tardio (WaitForFirstConsumer), e depois usar um servidor NFS (pré-provisionado no cluster) para provar o ReadWriteMany — dois Pods, possivelmente em nós diferentes, lendo e escrevendo o MESMO volume ao mesmo tempo. O contraste entre RWO (hostPath/local-path) e RWX (NFS) é o coração deste laboratório."
+    duration: 35m
+    image: "alpine/k8s:1.33.1"
+    tasks:
+      - name: "Fundamentos de armazenamento persistente"
+        description: "Entenda PV, PVC, StorageClass e os modos de acesso antes de criar o primeiro volume."
+        steps:
+          - "**Por que volumes persistentes existem?**"
+          - "O filesystem de um container é efêmero: quando o Pod morre, tudo que foi escrito nele some. Para dados que precisam sobreviver (bancos, uploads, arquivos de estado), o Kubernetes separa o armazenamento do ciclo de vida do Pod através de três objetos."
+          - "**Os três objetos de storage:**"
+          - "- PersistentVolume (PV): o pedaço de armazenamento de verdade (um disco, um export NFS). É cluster-scoped — só o admin cria."
+          - "- PersistentVolumeClaim (PVC): o PEDIDO de armazenamento que o aluno/app faz. É namespaced — você cria. O Kubernetes casa o PVC com um PV compatível."
+          - "- StorageClass: a receita que provisiona PVs sob demanda quando um PVC chega. Evita o admin criar PV à mão."
+          - "**Os modos de acesso (o conceito central deste lab):**"
+          - "- ReadWriteOnce (RWO): o volume é montado para leitura/escrita por UM nó por vez. É o que a maioria dos discos de bloco (e o local-path) oferece."
+          - "- ReadWriteMany (RWX): o volume é montado para leitura/escrita por VÁRIOS nós ao mesmo tempo. Exige um backend de rede como NFS."
+          - "- ReadOnlyMany (ROX): vários nós, só leitura."
+          - "**O cluster e os nós**"
+          - "Neste ambiente a StorageClass padrão já está configurada (local-path) e será usada automaticamente pelos seus PVCs quando você não informar uma. O conceito de ReadWriteMany só faz sentido num cluster com vários nós — confirme quantos nós o cluster tem:"
+          - "`kubectl get nodes`"
+          - "Guarde a ideia: com RWO (local-path), o volume fica preso a UM nó; com RWX (NFS, na Parte 2), vários nós compartilham o mesmo volume. É esse contraste que o lab vai provar."
+        tips:
+          - type: "info"
+            title: "PV x PVC"
+            content: "Pense no PV como a vaga de estacionamento (o recurso real) e no PVC como o ticket que reserva uma vaga. Você pede o ticket (PVC); o sistema casa com uma vaga (PV)."
+          - type: "warning"
+            title: "Quem cria o quê"
+            content: "Neste ambiente de lab a sua conta pode criar PVC, Pods e Deployments, mas NÃO pode criar PV nem StorageClass (são cluster-scoped, do admin). O servidor NFS e seu PV já foram provisionados para você."
+        validation:
+          - command: "test $(kubectl get nodes --no-headers 2>/dev/null | wc -l | tr -d ' ') -ge 1 && echo ok || echo fail"
+            expectedOutput: "ok"
+            errorMessage: "Não foi possível listar os nós do cluster. Rode 'kubectl get nodes'."
+
+      - name: "Parte 1 — PVC com local-path (ReadWriteOnce)"
+        description: "Crie um PVC com a StorageClass padrão, monte-o num Pod e observe o binding tardio e o modo RWO."
+        steps:
+          - "**Criando o seu primeiro PVC**"
+          - "Vamos pedir 1Gi de armazenamento usando a StorageClass padrão (local-path), no modo ReadWriteOnce. Um PVC (PersistentVolumeClaim) é um PEDIDO de armazenamento: você declara o tamanho e o modo de acesso, e o Kubernetes encontra (ou provisiona) um volume que atenda."
+          - "O manifesto que vamos aplicar é este (apenas para você LER e entender a estrutura — não precisa digitá-lo):"
+          - "```yaml\napiVersion: v1\nkind: PersistentVolumeClaim\nmetadata:\n  name: dados-rwo\nspec:\n  accessModes: [\"ReadWriteOnce\"]\n  storageClassName: local-path\n  resources:\n    requests:\n      storage: 1Gi\n```"
+          - "Como o terminal web perde a indentação ao colar YAML, o comando abaixo gera esse mesmo manifesto em uma única linha e o aplica. Copie e execute:"
+          - "`printf 'apiVersion: v1\\nkind: PersistentVolumeClaim\\nmetadata:\\n  name: dados-rwo\\nspec:\\n  accessModes: [\"ReadWriteOnce\"]\\n  storageClassName: local-path\\n  resources:\\n    requests:\\n      storage: 1Gi\\n' | kubectl apply -f -`"
+          - "**Observe o binding tardio**"
+          - "Veja o estado do PVC. Com a local-path (WaitForFirstConsumer) ele fica em Pending até um Pod consumi-lo — isso é esperado, não é erro:"
+          - "`kubectl get pvc dados-rwo`"
+          - "**Monte o PVC num Pod e escreva nele**"
+          - "Agora crie um Pod que monta o PVC em /dados e escreve um arquivo. Ao agendar o Pod, o PVC sai de Pending e vira Bound (o volume é provisionado no nó onde o Pod caiu):"
+          - "`kubectl run escritor-rwo --image=busybox --restart=Never --overrides='{\"spec\":{\"containers\":[{\"name\":\"c\",\"image\":\"busybox\",\"command\":[\"sh\",\"-c\",\"echo rwo-funciona > /dados/arquivo.txt && sleep 3600\"],\"volumeMounts\":[{\"name\":\"v\",\"mountPath\":\"/dados\"}]}],\"volumes\":[{\"name\":\"v\",\"persistentVolumeClaim\":{\"claimName\":\"dados-rwo\"}}]}}'`"
+          - "Aguarde alguns segundos e confirme que o PVC agora está Bound:"
+          - "`kubectl get pvc dados-rwo`"
+          - "Leia o arquivo que o Pod escreveu no volume persistente:"
+          - "`kubectl exec escritor-rwo -- cat /dados/arquivo.txt`"
+          - "**A limitação do RWO**"
+          - "O volume local-path vive no disco de UM nó. Se outro Pod num nó diferente tentasse montar o mesmo PVC em modo escrita, ficaria preso — RWO não permite dois nós ao mesmo tempo. É exatamente essa limitação que o NFS resolve na Parte 2."
+        tips:
+          - type: "info"
+            title: "WaitForFirstConsumer"
+            content: "Esse modo de binding atrasa a criação do PV até um Pod ser agendado, para que o volume nasça no mesmo nó do Pod. É por isso que o PVC fica Pending antes de haver um consumidor — comportamento correto, não falha."
+          - type: "tip"
+            title: "Bound x Pending"
+            content: "Um PVC em Pending com local-path quase sempre só está esperando o primeiro Pod. Depois de criar o Pod que o monta, confira de novo com kubectl get pvc."
+        validation:
+          - command: "kubectl get pvc dados-rwo -o jsonpath='{.spec.accessModes[0]}' 2>/dev/null || echo ''"
+            expectedOutput: "ReadWriteOnce"
+            errorMessage: "O PVC dados-rwo não foi criado com accessMode ReadWriteOnce."
+          - command: "kubectl get pvc dados-rwo -o jsonpath='{.status.phase}' 2>/dev/null || echo ''"
+            expectedOutput: "Bound"
+            errorMessage: "O PVC dados-rwo ainda não está Bound. Crie o Pod escritor-rwo que o monta e aguarde alguns segundos."
+          - command: "kubectl exec escritor-rwo -- cat /dados/arquivo.txt 2>/dev/null || echo ''"
+            expectedOutput: "rwo-funciona"
+            errorMessage: "O arquivo /dados/arquivo.txt não foi escrito no volume. Confira o Pod escritor-rwo."
+
+      - name: "Parte 2 — NFS por DNS (ReadWriteMany)"
+        description: "Use o servidor NFS pré-provisionado para montar o MESMO volume em dois Pods e provar o ReadWriteMany."
+        steps:
+          - "**O servidor NFS já está no cluster**"
+          - "O admin subiu um servidor NFS (ver labs/infra/nfs-server.yaml) acessível pelo nome DNS nfs-server.nfs-system.svc.cluster.local, exportando o diretório /export/dados. Confirme que o Service existe:"
+          - "`kubectl get svc -n nfs-system nfs-server`"
+          - "**Por que o mount é feito dentro do Pod**"
+          - "Neste cluster os nós não têm o helper mount.nfs instalado, então o volume nfs nativo do Kubernetes não monta pelo kubelet. A técnica deste lab é montar o NFS DENTRO do próprio Pod (container privilegiado que traz o cliente NFS), usando NFS v3 e a opção nolock. Isso funciona sem tocar nos nós."
+          - "**Pod ESCRITOR: monta o NFS e escreve**"
+          - "Crie um Pod privilegiado que instala o cliente NFS, monta o export por nome DNS (v3, nolock) e escreve um arquivo no volume compartilhado. O retry no mount cobre o tempo de o cliente ficar pronto:"
+          - "`kubectl run nfs-escritor --image=alpine:3.21 --restart=Never --overrides='{\"spec\":{\"containers\":[{\"name\":\"c\",\"image\":\"alpine:3.21\",\"securityContext\":{\"privileged\":true},\"command\":[\"sh\",\"-c\",\"apk add --no-cache nfs-utils >/dev/null 2>&1; mkdir -p /mnt/nfs; for i in $(seq 1 20); do mount -t nfs -o nfsvers=3,proto=tcp,nolock nfs-server.nfs-system.svc.cluster.local:/export/dados /mnt/nfs && break; sleep 3; done; echo rwx-via-nfs > /mnt/nfs/compartilhado.txt; echo ESCRITOR-OK; sleep 3600\"]}]}}'`"
+          - "Aguarde (o apk + mount leva ~30-60s) e confirme que o escritor montou e escreveu:"
+          - "`kubectl logs nfs-escritor`"
+          - "**Pod LEITOR: monta o MESMO NFS e lê**"
+          - "Agora crie um SEGUNDO Pod (independente do primeiro) que monta o mesmo export NFS e lê o arquivo que o escritor criou. Como o volume é RWX, os dois Pods usam o mesmo armazenamento simultaneamente:"
+          - "`kubectl run nfs-leitor --image=alpine:3.21 --restart=Never --overrides='{\"spec\":{\"containers\":[{\"name\":\"c\",\"image\":\"alpine:3.21\",\"securityContext\":{\"privileged\":true},\"command\":[\"sh\",\"-c\",\"apk add --no-cache nfs-utils >/dev/null 2>&1; mkdir -p /mnt/nfs; for i in $(seq 1 20); do mount -t nfs -o nfsvers=3,proto=tcp,nolock nfs-server.nfs-system.svc.cluster.local:/export/dados /mnt/nfs && break; sleep 3; done; echo LEITOR-VE: $(cat /mnt/nfs/compartilhado.txt); sleep 3600\"]}]}}'`"
+          - "Aguarde o leitor montar e leia o log — ele deve mostrar o conteúdo escrito pelo OUTRO Pod:"
+          - "`kubectl logs nfs-leitor`"
+          - "**O que você acabou de provar**"
+          - "Dois Pods distintos, cada um com seu próprio mount, enxergando o MESMO arquivo no mesmo volume NFS. Isso é ReadWriteMany — impossível com o local-path (RWO) da Parte 1. É assim que cargas como múltiplas réplicas de um app compartilham arquivos no Kubernetes."
+        tips:
+          - type: "warning"
+            title: "nolock é obrigatório aqui"
+            content: "Os Pods-cliente alpine não rodam o daemon rpc.statd, então o mount precisa de -o nolock. Sem isso o mount falha com 'rpc.statd is not running'."
+          - type: "info"
+            title: "Por que nome DNS e não IP"
+            content: "O Service é headless, então o nome nfs-server.nfs-system.svc.cluster.local resolve direto para o IP do Pod servidor — estável e sem passar pelo DNAT do kube-proxy, que trava o handshake NFS."
+        validation:
+          - command: "kubectl logs nfs-escritor 2>/dev/null | grep -q ESCRITOR-OK && echo ok || echo fail"
+            expectedOutput: "ok"
+            errorMessage: "O Pod nfs-escritor não concluiu o mount+escrita. Veja 'kubectl logs nfs-escritor' (o apk+mount pode levar ~60s)."
+          - command: "kubectl logs nfs-leitor 2>/dev/null | grep -q 'rwx-via-nfs' && echo ok || echo fail"
+            expectedOutput: "ok"
+            errorMessage: "O Pod nfs-leitor não leu o arquivo escrito pelo nfs-escritor via NFS. Confirme que o escritor rodou primeiro e veja 'kubectl logs nfs-leitor'."
+
+      - name: "Desafio e limpeza"
+        description: "Fixe o conceito provando a persistência e depois remova os recursos que você criou."
+        steps:
+          - "**Desafio: persistência de verdade**"
+          - "O volume NFS persiste mesmo se o Pod que escreveu morrer. Remova o Pod escritor e prove que o dado continua lá, lido por um Pod novo."
+          - "1. Remova o Pod escritor:"
+          - "`kubectl delete pod nfs-escritor --ignore-not-found`"
+          - "2. O leitor (nfs-leitor) ainda está de pé e já leu o arquivo — o dado sobreviveu à morte do escritor. Confirme o arquivo ainda existe montando-o de novo pelo leitor:"
+          - "`kubectl exec nfs-leitor -- cat /mnt/nfs/compartilhado.txt`"
+          - "**Limpeza — remova o que você criou**"
+          - "Remova os Pods e o PVC deste lab. (O servidor NFS e a StorageClass NÃO são seus — não os remova; são infra do cluster.)"
+          - "3. Remova os Pods restantes:"
+          - "`kubectl delete pod escritor-rwo nfs-leitor --ignore-not-found`"
+          - "4. Remova o PVC da Parte 1 (isso libera o volume local-path provisionado):"
+          - "`kubectl delete pvc dados-rwo --ignore-not-found`"
+          - "5. Confirme que não sobrou nada seu no namespace default:"
+          - "`kubectl get pods,pvc`"
+        tips:
+          - type: "tip"
+            title: "Reclaim do volume"
+            content: "Ao deletar o PVC dados-rwo, a StorageClass local-path tem reclaimPolicy Delete, então o PV e os dados locais são removidos automaticamente. O export NFS (que é infra) permanece."
+          - type: "warning"
+            title: "Não remova a infra"
+            content: "O servidor NFS no namespace nfs-system e a StorageClass local-path são compartilhados e pré-provisionados. Removê-los quebraria o lab para outros — e sua conta nem tem permissão para isso."
+        validation:
+          - command: "kubectl get pod nfs-escritor 2>&1 | grep -qi 'not found' && echo 'not found' || echo 'existe'"
+            expectedOutput: "not found"
+            errorMessage: "O Pod nfs-escritor ainda existe. Remova-o com kubectl delete pod nfs-escritor."
+          - command: "kubectl get pvc dados-rwo 2>&1 | grep -qi 'not found' && echo 'not found' || echo 'existe'"
+            expectedOutput: "not found"
+            errorMessage: "O PVC dados-rwo ainda existe. Remova-o com kubectl delete pvc dados-rwo."

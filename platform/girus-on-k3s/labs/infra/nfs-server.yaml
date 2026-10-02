@@ -1,0 +1,128 @@
+# ============================================================================
+# Infra de apoio ao Lab de Volumes Persistentes — Servidor NFS self-contained
+# ============================================================================
+# Sobe UMA VEZ pelo admin (credencial cheia), NÃO pelo aluno:
+#   kubectl apply -f labs/infra/nfs-server.yaml
+#
+# POR QUÊ é infra e não parte do lab:
+#   - O Pod servidor NFS precisa de securityContext.privileged (sobe o nfsd), e a
+#     ServiceAccount restrita do aluno (girus-sa) NÃO pode criar Pod privilegiado
+#     nem recursos cluster-scoped (PV/StorageClass). Confirmado por RBAC.
+#   - Mantém o padrão do backend do Girus: a infra o ambiente provisiona; o aluno consome.
+#
+# POR QUÊ este desenho (e não o volume nfs: nativo do k8s):
+#   - Os nós k3s NÃO têm /sbin/mount.nfs (pacote nfs-common ausente). O volume
+#     'nfs:' do Kubernetes é montado pelo KUBELET usando o helper DO HOST, então
+#     ele falha com "bad option; need /sbin/mount.nfs helper". Comprovado no probe.
+#   - Solução que NÃO toca no host: servidor e clientes rodam o mount NFS DENTRO
+#     do próprio container (privilegiado, trazendo o próprio nfs-common). O kubelet
+#     nunca monta NFS.
+#
+# SINGLE-NODE (decisão do projeto): sem redundância. Tudo pinado no MASTER
+#   (node-role.kubernetes.io/control-plane). O master do nosso k3s NÃO tem taint,
+#   então Pods normais agendam nele sem toleration. Pinar num nó fixo:
+#     - dá um backing hostPath estável (/srv/nfs-lab no master);
+#     - garante que os Pods-cliente do lab (também pinados no master) alcancem o
+#       server e vejam o MESMO volume.
+#
+# BACKING hostPath (não emptyDir): o emptyDir é zerado quando o Pod reinicia, o que
+#   apagava os arquivos do lab. hostPath /srv/nfs-lab no master persiste entre restarts.
+#
+# IMAGEM: ubuntu:24.04 (multi-arch, ARM64 OK). As imagens NFS dedicadas
+#         (itsthenetwork/nfs-server-alpine, erichough/nfs-server) só têm x86 e
+#         dão "exec format error" no ARM64 — comprovado no probe.
+# ============================================================================
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: nfs-system
+  labels:
+    app.kubernetes.io/part-of: kubeforge-labs
+    kubeforge.io/role: lab-infra
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: nfs-server
+  namespace: nfs-system
+  labels:
+    app: nfs-server
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: nfs-server
+  template:
+    metadata:
+      labels:
+        app: nfs-server
+    spec:
+      # Pin no MASTER (single-node, sem redundância). k3s master sem taint: dispensa toleration.
+      nodeSelector:
+        node-role.kubernetes.io/control-plane: "true"
+      containers:
+        - name: nfs-server
+          image: ubuntu:24.04
+          securityContext:
+            privileged: true
+          command: ["/bin/bash", "-c"]
+          args:
+            - |
+              set -euo pipefail
+              export DEBIAN_FRONTEND=noninteractive
+              echo "[nfs] instalando nfs-kernel-server..."
+              apt-get update -qq
+              apt-get install -y -qq nfs-kernel-server rpcbind >/dev/null
+              mkdir -p /export/dados
+              chmod 1777 /export/dados
+              echo "/export/dados *(rw,sync,no_subtree_check,no_root_squash)" > /etc/exports
+              # Ordem determinística: rpcbind -> mountd -> nfsd -> exportfs.
+              echo "[nfs] subindo rpcbind..."
+              rpcbind -w
+              sleep 2
+              echo "[nfs] subindo nfsd (8 threads)..."
+              rpc.nfsd 8
+              echo "[nfs] exportando..."
+              exportfs -rav
+              echo "[nfs] rpc.mountd (foreground) — servidor pronto."
+              rpc.mountd --foreground
+          ports:
+            - name: nfs
+              containerPort: 2049
+          volumeMounts:
+            - name: export
+              mountPath: /export
+          readinessProbe:
+            # Pronto só quando o NFS responde a rpcinfo (não só a porta TCP aberta).
+            exec:
+              command: ["bash", "-c", "rpcinfo -p 127.0.0.1 | grep -q nfs"]
+            initialDelaySeconds: 25
+            periodSeconds: 10
+            failureThreshold: 12
+      volumes:
+        - name: export
+          hostPath:
+            path: /srv/nfs-lab
+            type: DirectoryOrCreate
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: nfs-server
+  namespace: nfs-system
+  labels:
+    app: nfs-server
+spec:
+  # HEADLESS (clusterIP: None): o DNS 'nfs-server.nfs-system.svc.cluster.local'
+  # resolve DIRETO para o podIP do servidor (A record), sem passar pelo DNAT do
+  # kube-proxy/iptables do ClusterIP — que TRAVAVA o mount NFS (comprovado no probe:
+  # mount via ClusterIP pendurava, via podIP exit=0). Nome estável + rota que o NFS
+  # aceita = os Pods-cliente do lab montam 'nfs-server.nfs-system.svc.cluster.local:/export/dados'
+  # sem depender do podIP volátil.
+  clusterIP: None
+  selector:
+    app: nfs-server
+  ports:
+    - name: nfs
+      port: 2049
+      targetPort: 2049
