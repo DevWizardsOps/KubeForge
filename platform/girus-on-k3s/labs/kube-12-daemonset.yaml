@@ -1,0 +1,114 @@
+# ============================================================================
+# Lab GIRUS — DaemonSet: um Pod por nó  (k3s ARM64)
+# ============================================================================
+# AUTORIA: KubeForge (conteúdo próprio). Mesmo schema dos demais labs:
+#          steps=[]string, validação por igualdade exata (==), comandos
+#          imperativos (kubectl apply via here-doc / kubectl create) porque o
+#          terminal web achata YAML multi-linha colado — por isso o manifesto
+#          aparece como BLOCO DE LEITURA e a execução usa um one-liner robusto.
+#
+# VALIDADO EM POD REAL no cluster KubeForge (3 nós ARM64 SEM taint) como a SA
+# restrita do aluno system:serviceaccount:lab-test-user:default:
+#   - create daemonsets = yes
+#   - DaemonSet node-logger: desiredNumberScheduled=3, numberReady=3,
+#     exatamente 1 Pod por nó (ip-10-0-1-164 / -195 / -230) — medido.
+#   - validação V2 (numberReady==3) e V3 (desired==nº de nós) passam byte-a-byte.
+#
+# POR QUE 3 PODS AQUI: os 3 nós deste cluster estão SEM taint, então o
+#   DaemonSet sobe em todos sem precisar de toleration. Em um cluster com
+#   control-plane tainted, o DS pularia o master a menos que tolere o taint —
+#   isso vira o ponto didático da Tarefa 3.
+#
+# IMAGEM DO ALUNO: alpine/k8s:1.33.1 (bash+kubectl+helm, multi-arch ARM64).
+# ============================================================================
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: kubernetes-daemonset-lab
+  namespace: girus
+  labels:
+    app: girus-lab-template
+data:
+  lab.yaml: |
+    name: kubernetes-daemonset
+    title: "[Opcional] Lab 12 — DaemonSet: um Pod por nó"
+    description: "Um DaemonSet garante que uma cópia de um Pod rode em CADA nó do cluster (ou num subconjunto de nós). É o padrão para agentes de infraestrutura: coletores de log, exportadores de métricas, agentes de rede (CNI) e de armazenamento. Neste lab você cria um DaemonSet, confirma que ele sobe exatamente um Pod por nó, entende como ele difere de um Deployment (que escala por número de réplicas, não por número de nós), e vê como taints/tolerations controlam em QUAIS nós o DaemonSet roda."
+    duration: 20m
+    image: "alpine/k8s:1.33.1"
+    tasks:
+      - name: "O que é um DaemonSet e quando usar"
+        description: "Entenda a diferença entre escalar por réplica (Deployment) e escalar por nó (DaemonSet)."
+        steps:
+          - "**Deployment vs DaemonSet**"
+          - "Um **Deployment** você dimensiona por `replicas: N` — o scheduler decide em quais nós colocar os N Pods, e vários podem cair no mesmo nó. Serve para a sua aplicação (web, API), onde o que importa é QUANTAS cópias existem."
+          - "Um **DaemonSet** não tem `replicas`. Ele garante **um Pod por nó elegível**. Se você adiciona um nó ao cluster, o DaemonSet sobe automaticamente um Pod nele; se remove o nó, o Pod some junto. Serve para **agentes de infraestrutura** que precisam estar presentes em TODA máquina."
+          - "**Casos de uso clássicos de DaemonSet:**"
+          - "- coletor de logs (ex.: Fluent Bit, Promtail) — precisa ler os logs do nó onde o container roda;"
+          - "- exportador de métricas (ex.: node-exporter do Prometheus) — mede CPU/disco/rede de cada nó;"
+          - "- agente de rede / CNI (ex.: Calico, Cilium) e de storage (ex.: CSI node plugin);"
+          - "- agente de segurança/antivírus que precisa estar em cada host."
+          - "Veja quantos nós este cluster tem — é esse o número de Pods que um DaemonSet vai criar:"
+          - "`kubectl get nodes`"
+        tips:
+          - type: "info"
+            title: "DaemonSet escala com o cluster, não com a demanda"
+            content: "Você nunca escolhe o número de Pods de um DaemonSet. Ele acompanha o número de nós elegíveis. Para escalar por carga, use Deployment + HPA — propósitos diferentes."
+        validation:
+          - command: "test $(kubectl get nodes --no-headers 2>/dev/null | wc -l | tr -d ' ') -ge 1 && echo ok || echo fail"
+            expectedOutput: "ok"
+            errorMessage: "Não foi possível listar os nós. Rode 'kubectl get nodes'."
+
+      - name: "Crie um DaemonSet e confirme um Pod por nó"
+        description: "Suba um DaemonSet de exemplo e verifique que ele cria exatamente um Pod em cada nó."
+        steps:
+          - "**O manifesto de um DaemonSet (apenas para LER)**"
+          - "A estrutura é quase igual à de um Deployment, com DUAS diferenças: `kind: DaemonSet` e a AUSÊNCIA do campo `replicas` (o controlador decide o número sozinho, pelo número de nós)."
+          - "```yaml\n# daemonset de exemplo (apenas leitura — crie pelo comando abaixo)\napiVersion: apps/v1\nkind: DaemonSet\nmetadata:\n  name: node-logger\nspec:\n  selector:\n    matchLabels: { app: node-logger }\n  template:\n    metadata:\n      labels: { app: node-logger }\n    spec:\n      containers:\n      - name: logger\n        image: busybox\n        command: [\"/bin/sh\",\"-c\",\"while true; do sleep 3600; done\"]\n        resources:\n          requests: { cpu: \"10m\", memory: \"16Mi\" }\n          limits:   { cpu: \"50m\", memory: \"32Mi\" }\n```"
+          - "**Crie o DaemonSet** (o terminal web achata YAML colado, então use este here-document que preserva a indentação):"
+          - "`kubectl apply -f - <<'EOF'\napiVersion: apps/v1\nkind: DaemonSet\nmetadata:\n  name: node-logger\nspec:\n  selector:\n    matchLabels: { app: node-logger }\n  template:\n    metadata:\n      labels: { app: node-logger }\n    spec:\n      containers:\n      - name: logger\n        image: busybox\n        command: [\"/bin/sh\",\"-c\",\"while true; do sleep 3600; done\"]\n        resources:\n          requests: { cpu: \"10m\", memory: \"16Mi\" }\n          limits:   { cpu: \"50m\", memory: \"32Mi\" }\nEOF`"
+          - "**Acompanhe o rollout** até todos os Pods ficarem prontos (um por nó):"
+          - "`kubectl rollout status ds/node-logger`"
+          - "**Veja o resultado:** quantos foram agendados e quantos estão prontos. Os dois números devem bater com o número de nós:"
+          - "`kubectl get daemonset node-logger`"
+          - "**Prove que é um Pod por nó** — liste os Pods com a coluna NODE e repare que cada um caiu em um nó diferente:"
+          - "`kubectl get pods -l app=node-logger -o wide`"
+        tips:
+          - type: "tip"
+            title: "Leia os campos de status do DaemonSet"
+            content: "DESIRED = quantos nós são elegíveis; CURRENT/READY = quantos já têm o Pod rodando/pronto. Em um cluster saudável sem taints, DESIRED = número de nós = READY."
+          - type: "warning"
+            title: "busybox 'sleep' é só para o lab"
+            content: "Usamos um container que apenas dorme para focar no comportamento do DaemonSet. Um DaemonSet real (ex.: node-exporter) monta hostPath/volumes do nó para ler métricas/logs — fora do escopo deste lab de permissão restrita."
+        validation:
+          - command: "kubectl get ds node-logger -o jsonpath='{.metadata.name}' 2>/dev/null"
+            expectedOutput: "node-logger"
+            errorMessage: "O DaemonSet 'node-logger' não existe. Crie-o com o comando kubectl apply -f - <<'EOF' da tarefa."
+          - command: "DS=$(kubectl get ds node-logger -o jsonpath='{.status.desiredNumberScheduled}' 2>/dev/null); N=$(kubectl get nodes --no-headers 2>/dev/null | wc -l | tr -d ' '); test \"$DS\" = \"$N\" && echo ok || echo fail"
+            expectedOutput: "ok"
+            errorMessage: "O número de Pods agendados pelo DaemonSet não bate com o número de nós. Confira 'kubectl get daemonset node-logger' e 'kubectl get nodes'."
+          - command: "test \"$(kubectl get ds node-logger -o jsonpath='{.status.numberReady}' 2>/dev/null)\" = \"$(kubectl get nodes --no-headers 2>/dev/null | wc -l | tr -d ' ')\" && echo ok || echo fail"
+            expectedOutput: "ok"
+            errorMessage: "Nem todos os Pods do DaemonSet estão prontos. Aguarde o rollout: 'kubectl rollout status ds/node-logger'."
+
+      - name: "Taints, tolerations e limpeza"
+        description: "Entenda por que um DaemonSet pode pular alguns nós e remova o DaemonSet."
+        steps:
+          - "**Por que um DaemonSet às vezes NÃO roda em todos os nós**"
+          - "O DaemonSet só cria Pod em nós **elegíveis**. Um nó com **taint** (ex.: o control-plane costuma ter `node-role.kubernetes.io/control-plane:NoSchedule`) repele Pods comuns — e o DaemonSet pula esse nó A MENOS que o Pod declare uma **toleration** correspondente."
+          - "É assim que agentes de infraestrutura reais (CNI, log) conseguem rodar ATÉ no control-plane: eles declaram tolerations amplas. Exemplo de toleration que faz o DaemonSet rodar em qualquer nó, inclusive os tainted:"
+          - "```yaml\n# trecho do template.spec (apenas leitura)\n    spec:\n      tolerations:\n      - operator: Exists   # tolera QUALQUER taint — roda em todo nó, inclusive control-plane\n      containers:\n      - name: logger\n        image: busybox\n```"
+          - "**Observação neste cluster:** os nós deste KubeForge estão SEM taint, por isso o seu `node-logger` subiu nos 3 sem precisar de toleration. Em um cluster de produção com control-plane tainted, sem a toleration acima o DaemonSet rodaria só nos nós de trabalho."
+          - "Confirme se os nós deste cluster têm algum taint (deve vir vazio aqui):"
+          - "`kubectl get nodes -o jsonpath='{range .items[*]}{.metadata.name}{\": \"}{.spec.taints}{\"\\n\"}{end}'`"
+          - "**Limpeza** — remova o DaemonSet (os Pods somem junto, um por nó):"
+          - "`kubectl delete daemonset node-logger`"
+          - "Confirme que sumiu:"
+          - "`kubectl get daemonset node-logger`"
+        tips:
+          - type: "info"
+            title: "DaemonSet respeita nodeSelector e affinity também"
+            content: "Além de tolerations, você pode restringir um DaemonSet a um subconjunto de nós com nodeSelector (ex.: só nós com disco SSD) ou nodeAffinity. Aí DESIRED deixa de ser 'todos os nós' e passa a ser 'os nós que casam o seletor'."
+        validation:
+          - command: "kubectl get ds node-logger 2>&1 | grep -q 'NotFound\\|not found' && echo gone || echo present"
+            expectedOutput: "gone"
+            errorMessage: "O DaemonSet 'node-logger' ainda existe. Remova-o com 'kubectl delete daemonset node-logger'."

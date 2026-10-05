@@ -1,0 +1,112 @@
+# ============================================================================
+# Lab GIRUS — StatefulSet: identidade estável e storage por réplica  (k3s ARM64)
+# ============================================================================
+# AUTORIA: KubeForge (conteúdo próprio). Mesmo schema dos demais labs:
+#          steps=[]string, validação por igualdade exata (==), comandos
+#          imperativos (kubectl apply via here-doc) porque o terminal web
+#          achata YAML multi-linha colado — manifesto como BLOCO DE LEITURA.
+#
+# VALIDADO EM POD REAL no cluster KubeForge (3 nós ARM64) como a SA restrita
+# do aluno system:serviceaccount:lab-test-user:default:
+#   - create statefulsets / statefulsets/scale / pvc / services = yes
+#   - StorageClass default = local-path (provado no kube-08).
+#   - StatefulSet 'web' replicas=2 -> Pods web-0 e web-1 (ordinais), readyReplicas=2,
+#     PVCs data-web-0 / data-web-1 (um por ordinal, Bound). scale=3 -> web-2 +
+#     data-web-2 criados sob demanda. Tudo medido byte-a-byte.
+#   - headless Service (clusterIP: None) obrigatório para o DNS estável das réplicas.
+#
+# IMAGEM DO ALUNO: alpine/k8s:1.33.1 (bash+kubectl+helm, multi-arch ARM64).
+# IMAGEM DO WORKLOAD DO LAB: nginx:alpine (leve, ARM64).
+# ============================================================================
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: kubernetes-statefulset-lab
+  namespace: girus
+  labels:
+    app: girus-lab-template
+data:
+  lab.yaml: |
+    name: kubernetes-statefulset
+    title: "[Opcional] Lab 13 — StatefulSet: identidade estável e storage por réplica"
+    description: "Um Deployment trata seus Pods como gado intercambiável: nomes aleatórios, sem ordem, sem storage próprio. Um StatefulSet trata cada Pod como um indivíduo: nome ESTÁVEL e ordinal (web-0, web-1, web-2), criação e remoção em ORDEM, e um volume PERSISTENTE próprio por réplica que sobrevive ao restart do Pod. É o padrão para bancos de dados, filas e qualquer coisa com estado (Kafka, PostgreSQL, Elasticsearch). Neste lab você cria um StatefulSet com um Service headless, confirma a identidade ordinal dos Pods, vê o PVC dedicado de cada réplica e observa o storage ser provisionado sob demanda ao escalar."
+    duration: 25m
+    image: "alpine/k8s:1.33.1"
+    tasks:
+      - name: "Deployment vs StatefulSet: por que a identidade importa"
+        description: "Entenda o que um StatefulSet garante que um Deployment não garante."
+        steps:
+          - "**Pods de Deployment são descartáveis e anônimos**"
+          - "Num Deployment, os Pods ganham nomes aleatórios (`web-7d9f8-abcde`), não têm ordem de criação, e se um morre o substituto é um Pod NOVO sem relação com o anterior. Isso é ótimo para aplicações sem estado (uma API web), onde qualquer réplica serve qualquer requisição."
+          - "**StatefulSet dá identidade a cada réplica — três garantias:**"
+          - "1. **Nome estável e ordinal:** os Pods são `web-0`, `web-1`, `web-2`... Esse nome NÃO muda quando o Pod reinicia. Combinado com um Service headless, cada Pod ganha um DNS fixo (`web-0.web-headless`), então os outros Pods sabem onde encontrá-lo."
+          - "2. **Ordem garantida:** o `web-1` só é criado depois do `web-0` estar pronto; na remoção/scale-down, o maior ordinal sai primeiro. Essencial para clusters que elegem líder ou fazem bootstrap em ordem (ex.: o nó 0 do etcd/Kafka)."
+          - "3. **Storage persistente por réplica:** cada Pod recebe seu PRÓPRIO volume (PVC) via `volumeClaimTemplates`. O volume do `web-0` fica com o `web-0` para sempre — se o Pod reinicia, remonta o MESMO disco com os MESMOS dados."
+          - "Confirme que este cluster tem uma StorageClass default (é dela que o StatefulSet vai pedir os volumes):"
+          - "`kubectl get storageclass`"
+        tips:
+          - type: "info"
+            title: "A regra prática"
+            content: "Sem estado e intercambiável -> Deployment. Com estado, identidade fixa ou disco próprio por réplica (banco, fila, cache com persistência) -> StatefulSet."
+        validation:
+          - command: "test $(kubectl get storageclass --no-headers 2>/dev/null | wc -l | tr -d ' ') -ge 1 && echo ok || echo fail"
+            expectedOutput: "ok"
+            errorMessage: "Nenhuma StorageClass encontrada. O StatefulSet precisa de uma para provisionar os volumes. Rode 'kubectl get storageclass'."
+
+      - name: "Crie o Service headless e o StatefulSet"
+        description: "Suba um StatefulSet de 2 réplicas com storage por réplica e confirme os nomes ordinais."
+        steps:
+          - "**Primeiro: o Service headless (clusterIP: None)**"
+          - "Um StatefulSet EXIGE um Service headless (`clusterIP: None`) nomeado em `serviceName`. Diferente de um Service normal (que dá UM IP virtual e balanceia), o headless NÃO balanceia — ele cria uma entrada DNS por Pod (`web-0.web-headless`, `web-1.web-headless`), que é como as réplicas se enxergam individualmente."
+          - "**O manifesto completo (apenas para LER)** — repare no `serviceName`, nos `volumeClaimTemplates` (o molde do PVC de cada réplica) e na ausência de nome fixo de volume (o controlador gera `data-web-0`, `data-web-1`...):"
+          - "```yaml\n# Service headless + StatefulSet (apenas leitura — crie pelos comandos abaixo)\napiVersion: v1\nkind: Service\nmetadata:\n  name: web-headless\nspec:\n  clusterIP: None            # <- headless: DNS por Pod, sem balanceamento\n  selector: { app: web-sts }\n  ports:\n  - port: 80\n---\napiVersion: apps/v1\nkind: StatefulSet\nmetadata:\n  name: web\nspec:\n  serviceName: web-headless  # <- aponta para o Service headless acima\n  replicas: 2\n  selector:\n    matchLabels: { app: web-sts }\n  template:\n    metadata:\n      labels: { app: web-sts }\n    spec:\n      containers:\n      - name: nginx\n        image: nginx:alpine\n        volumeMounts:\n        - name: data\n          mountPath: /usr/share/nginx/html\n  volumeClaimTemplates:        # <- molde do PVC: um por réplica\n  - metadata: { name: data }\n    spec:\n      accessModes: [\"ReadWriteOnce\"]\n      resources:\n        requests: { storage: 100Mi }\n```"
+          - "**Crie tudo de uma vez** (here-document preserva a indentação, que o terminal web achataria):"
+          - "`kubectl apply -f - <<'EOF'\napiVersion: v1\nkind: Service\nmetadata: { name: web-headless }\nspec: { clusterIP: None, selector: { app: web-sts }, ports: [{ port: 80 }] }\n---\napiVersion: apps/v1\nkind: StatefulSet\nmetadata: { name: web }\nspec:\n  serviceName: web-headless\n  replicas: 2\n  selector: { matchLabels: { app: web-sts } }\n  template:\n    metadata: { labels: { app: web-sts } }\n    spec:\n      containers:\n      - name: nginx\n        image: nginx:alpine\n        volumeMounts: [{ name: data, mountPath: /usr/share/nginx/html }]\n        resources: { requests: { cpu: \"10m\", memory: \"16Mi\" }, limits: { cpu: \"100m\", memory: \"64Mi\" } }\n  volumeClaimTemplates:\n  - metadata: { name: data }\n    spec: { accessModes: [\"ReadWriteOnce\"], resources: { requests: { storage: 100Mi } } }\nEOF`"
+          - "**Acompanhe a criação em ORDEM** — repare que o `web-1` só sobe depois do `web-0` ficar pronto:"
+          - "`kubectl rollout status statefulset/web`"
+          - "**Veja os nomes ordinais** (web-0, web-1 — nunca aleatórios):"
+          - "`kubectl get pods -l app=web-sts`"
+        tips:
+          - type: "warning"
+            title: "Sem o Service headless, o StatefulSet não funciona direito"
+            content: "O 'serviceName' do StatefulSet TEM que apontar para um Service headless existente. Sem ele, os Pods sobem mas perdem o DNS estável por réplica — e aplicações com estado (que se procuram por nome) quebram."
+          - type: "info"
+            title: "Ordem na criação e na remoção"
+            content: "Scale-up cria do menor ordinal para o maior (web-0, web-1, web-2). Scale-down remove do maior para o menor (web-2 sai primeiro). Isso dá previsibilidade a quem faz bootstrap/eleição de líder em ordem."
+        validation:
+          - command: "kubectl get pod web-0 -o jsonpath='{.metadata.name}' 2>/dev/null"
+            expectedOutput: "web-0"
+            errorMessage: "O Pod 'web-0' não existe. Crie o StatefulSet com o comando kubectl apply -f - <<'EOF' da tarefa."
+          - command: "test \"$(kubectl get statefulset web -o jsonpath='{.status.readyReplicas}' 2>/dev/null)\" = \"2\" && echo ok || echo fail"
+            expectedOutput: "ok"
+            errorMessage: "O StatefulSet não tem 2 réplicas prontas. Aguarde: 'kubectl rollout status statefulset/web'."
+
+      - name: "Storage por réplica e escala ordenada"
+        description: "Confirme o PVC dedicado de cada Pod e veja o storage ser provisionado ao escalar."
+        steps:
+          - "**Cada réplica tem seu próprio PVC**"
+          - "O `volumeClaimTemplates` fez o StatefulSet criar um PVC por Pod, nomeado `<nome-do-template>-<nome-do-pod>`: `data-web-0` para o `web-0`, `data-web-1` para o `web-1`. Esse vínculo é PERMANENTE — se o `web-0` reinicia, remonta o `data-web-0` com os dados de antes."
+          - "Liste os PVCs e veja um por réplica, cada um `Bound`:"
+          - "`kubectl get pvc`"
+          - "**Prove a persistência do nome** — o PVC do web-0 segue o Pod web-0:"
+          - "`kubectl get pvc data-web-0 -o jsonpath='{.metadata.name} {.status.phase}'; echo`"
+          - "**Escale para 3 réplicas** — observe o `web-2` ser criado DEPOIS do web-1 (ordem) e um PVC novo `data-web-2` ser provisionado sob demanda:"
+          - "`kubectl scale statefulset web --replicas=3`"
+          - "`kubectl rollout status statefulset/web`"
+          - "Confirme o PVC novo da terceira réplica:"
+          - "`kubectl get pvc data-web-2`"
+          - "**Limpeza** — remova o StatefulSet e o Service. ATENÇÃO: os PVCs NÃO são removidos automaticamente (o Kubernetes preserva seus dados de propósito), então apague-os à mão:"
+          - "`kubectl delete statefulset web`"
+          - "`kubectl delete service web-headless`"
+          - "`kubectl delete pvc data-web-0 data-web-1 data-web-2`"
+        tips:
+          - type: "warning"
+            title: "Scale-down NÃO apaga os PVCs"
+            content: "Se você baixar as réplicas de 3 para 1, os Pods web-1 e web-2 somem mas os PVCs data-web-1/data-web-2 FICAM. É intencional: ao subir de novo, os dados voltam. Em produção isso evita perda de dados — mas lembre de limpar PVCs órfãos para não pagar storage à toa."
+          - type: "info"
+            title: "DNS estável por réplica"
+            content: "Com o Service headless, cada Pod tem um FQDN fixo: web-0.web-headless.<namespace>.svc.cluster.local. Um banco em cluster usa isso para os nós se encontrarem por nome, mesmo depois de reiniciarem."
+        validation:
+          - command: "kubectl get statefulset web 2>&1 | grep -q 'NotFound\\|not found' && echo gone || echo present"
+            expectedOutput: "gone"
+            errorMessage: "O StatefulSet 'web' ainda existe. Remova-o com 'kubectl delete statefulset web' (e depois os PVCs data-web-* e o Service web-headless)."
