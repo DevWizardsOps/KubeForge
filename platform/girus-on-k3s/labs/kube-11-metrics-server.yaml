@@ -113,7 +113,7 @@ data:
           - "`kubectl get deployment metrics-demo -o jsonpath='{.metadata.name}'; echo`"
           - "**Veja a imagem que você usou** — é a mesma imagem do metrics-server real:"
           - "`kubectl get deployment metrics-demo -o jsonpath='{.spec.template.spec.containers[0].image}'; echo`"
-          - "**Compare mentalmente:** o metrics-demo que você acabou de subir é um Deployment comum no seu namespace. O metrics-server real difere em três coisas que exigem admin: (1) roda em `kube-system`, (2) tem ClusterRole para ler métricas de TODOS os nós, (3) registra o APIService `v1beta1.metrics.k8s.io` que agrega a Metrics API. É essa agregação que faz o `kubectl top` funcionar — e é exatamente a parte que precisa de administrador."
+          - "**Compare mentalmente:** o metrics-demo que você acabou de subir é um Deployment comum no seu namespace. O metrics-server real difere em três coisas que exigem admin: (1) roda no namespace kube-system, (2) tem ClusterRole para ler métricas de TODOS os nós, (3) registra o APIService v1beta1.metrics.k8s.io que agrega a Metrics API. É essa agregação que faz o kubectl top funcionar, e é exatamente a parte que precisa de administrador."
         tips:
           - type: "info"
             title: "Fluxo de deploy de componente de plataforma"
