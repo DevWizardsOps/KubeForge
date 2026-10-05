@@ -171,6 +171,12 @@ rules:
   - apiGroups: [""]
     resources: ["nodes"]
     verbs: ["get", "list", "watch"]
+  # Metrics API (metrics.k8s.io) — leitura, para 'kubectl top pods/nodes'
+  # funcionar nos labs kube-10 (QoS) e kube-11 (metrics-server). Sem esta regra
+  # o aluno recebe Forbidden em pods.metrics.k8s.io mesmo com o metrics-server up.
+  - apiGroups: ["metrics.k8s.io"]
+    resources: ["pods", "nodes"]
+    verbs: ["get", "list"]
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
