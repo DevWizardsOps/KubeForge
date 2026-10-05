@@ -1,0 +1,147 @@
+# ============================================================================
+# Lab GIRUS — Health Checks: liveness, readiness e startup probes  (k3s ARM64)
+# ============================================================================
+# AUTORIA: KubeForge (conteúdo próprio). Mesmo schema dos demais labs:
+#          steps=[]string, validação por igualdade exata (==), comandos
+#          imperativos (kubectl run --overrides) porque o terminal web achata
+#          YAML multi-linha colado.
+#
+# DECISÕES DE DESENHO (todas comprovadas em probe no cluster real):
+#   - A SA restrita do aluno (lab-test-user:default) tem pods CRUD + events,
+#     que é tudo que a validação lê (.status.conditions, .status.containerStatuses).
+#   - ARMADILHA CENTRAL do liveness: `kubectl run` usa restartPolicy=Never por
+#     padrão, e um Pod Never NÃO reinicia o container quando o liveness falha
+#     (restartCount fica 0 para sempre). O lab de liveness USA --restart=Always
+#     de propósito — foi medido: com Never restartCount=0; com Always o kubelet
+#     mata e reinicia o container (restartCount>=1, evento 'Killing / Liveness
+#     probe failed'). Essa é a diferença que o lab ensina.
+#   - readinessProbe: Pod só entra em conditions[Ready]=True quando o probe passa.
+#     Medido: exec probe lendo um arquivo existente -> Ready=True em ~5s.
+#
+# IMAGEM DO ALUNO: alpine/k8s:1.33.1 (bash+kubectl+helm, multi-arch ARM64).
+# ============================================================================
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: kubernetes-probes-lab
+  namespace: girus
+  labels:
+    app: girus-lab-template
+data:
+  lab.yaml: |
+    name: kubernetes-probes
+    title: "Lab 9 — Health Checks: liveness, readiness e startup probes"
+    description: "Aprenda como o Kubernetes sabe se um container está vivo e pronto para receber tráfego. Você vai criar um livenessProbe que faz o kubelet reiniciar um container travado, um readinessProbe que mantém um Pod fora do balanceamento até ele estar realmente pronto, e entender o startupProbe para apps de inicialização lenta. É a base da auto-recuperação e do rollout sem downtime no Kubernetes."
+    duration: 30m
+    image: "alpine/k8s:1.33.1"
+    tasks:
+      - name: "Fundamentos dos probes"
+        description: "Entenda os três tipos de probe e o que cada um controla antes de criar o primeiro."
+        steps:
+          - "**Por que o Kubernetes precisa de probes?**"
+          - "Um processo pode estar rodando (o container não morreu) e mesmo assim estar inútil: travado num deadlock, com o pool de conexões esgotado, ou ainda carregando dados na partida. Para o Kubernetes, 'o PID existe' não é o mesmo que 'o app está saudável'. Os probes são como o kubelet pergunta ao container se ele está vivo e pronto."
+          - "**Os três tipos de probe:**"
+          - "- livenessProbe: 'o container está VIVO?' Se falhar, o kubelet MATA e REINICIA o container. Resolve travamentos — o container volta do zero."
+          - "- readinessProbe: 'o container está PRONTO para receber tráfego?' Se falhar, o Pod é RETIRADO dos Endpoints do Service (para de receber requisições) mas NÃO é reiniciado. Resolve 'ainda estou aquecendo'."
+          - "- startupProbe: 'o app TERMINOU de iniciar?' Enquanto não passa, desliga liveness e readiness. Protege apps de partida lenta de serem mortos pelo liveness antes de terminarem de subir."
+          - "**Os mecanismos de checagem:**"
+          - "Cada probe usa um de três mecanismos: exec (roda um comando dentro do container; exit 0 = ok), httpGet (faz um GET numa porta/caminho; 2xx/3xx = ok), ou tcpSocket (tenta abrir uma conexão TCP; conectou = ok). Neste lab usamos exec e httpGet."
+          - "**Os parâmetros de tempo (valem para os três):**"
+          - "- initialDelaySeconds: espera antes do PRIMEIRO probe (dá tempo do app subir)."
+          - "- periodSeconds: de quanto em quanto tempo repete."
+          - "- failureThreshold: quantas falhas seguidas para considerar o probe falho."
+          - "- timeoutSeconds: quanto tempo esperar a resposta de cada probe."
+          - "Confirme que o cluster tem nós prontos antes de começar:"
+          - "`kubectl get nodes`"
+        tips:
+          - type: "info"
+            title: "Liveness x Readiness na prática"
+            content: "Liveness falhando = container reiniciado (restartCount sobe). Readiness falhando = Pod sai do Service mas segue rodando (Ready=False). Confundir os dois causa bugs clássicos: um liveness agressivo demais fica reiniciando um app que só estava ocupado."
+          - type: "warning"
+            title: "O liveness mata — use com cuidado"
+            content: "Um livenessProbe mal calibrado (período curto, threshold baixo) pode entrar em loop de restart num app saudável que só demora a responder sob carga. Readiness quase nunca causa dano; liveness pode. Comece conservador."
+        validation:
+          - command: "test $(kubectl get nodes --no-headers 2>/dev/null | wc -l | tr -d ' ') -ge 1 && echo ok || echo fail"
+            expectedOutput: "ok"
+            errorMessage: "Não foi possível listar os nós do cluster. Rode 'kubectl get nodes'."
+
+      - name: "Parte 1 — readinessProbe (pronto para o tráfego)"
+        description: "Crie um Pod com readinessProbe e observe o Pod só ficar Ready quando o probe passa."
+        steps:
+          - "**O que o readinessProbe faz**"
+          - "O readinessProbe decide se o Pod entra ou não nos Endpoints de um Service — ou seja, se ele recebe tráfego. Um Pod que falha no readiness continua RODANDO (não é reiniciado), mas fica com a condição Ready=False e é tirado do balanceamento até se recuperar."
+          - "**O manifesto (apenas para LER e entender — não precisa digitar):**"
+          - "```yaml\napiVersion: v1\nkind: Pod\nmetadata:\n  name: web-ready\nspec:\n  containers:\n  - name: c\n    image: nginx\n    readinessProbe:\n      exec:\n        command: [\"cat\", \"/usr/share/nginx/html/index.html\"]\n      initialDelaySeconds: 2\n      periodSeconds: 3\n```"
+          - "O readiness aqui é um exec que lê o index.html do nginx (que existe na imagem), então o Pod fica Ready logo. Como o terminal web perde a indentação ao colar YAML, o comando abaixo cria esse mesmo Pod. Copie e execute:"
+          - "`kubectl run web-ready --image=nginx --restart=Never --overrides='{\"spec\":{\"containers\":[{\"name\":\"c\",\"image\":\"nginx\",\"readinessProbe\":{\"exec\":{\"command\":[\"cat\",\"/usr/share/nginx/html/index.html\"]},\"initialDelaySeconds\":2,\"periodSeconds\":3}}]}}'`"
+          - "**Observe o Pod ficar Ready**"
+          - "Veja a coluna READY (ex. 1/1) — ela só vai para 1/1 depois que o readinessProbe passa. Pode levar alguns segundos por causa do initialDelaySeconds:"
+          - "`kubectl get pod web-ready`"
+          - "Leia a condição Ready diretamente no status do Pod (deve ser True):"
+          - "`kubectl get pod web-ready -o jsonpath='{.status.conditions[?(@.type==\"Ready\")].status}'; echo`"
+          - "**Prove o oposto: um readiness que NUNCA passa**"
+          - "Crie um segundo Pod cujo readiness tenta ler um arquivo inexistente — ele vai subir e RODAR, mas nunca fica Ready (fica 0/1), e nunca reinicia:"
+          - "`kubectl run web-naoready --image=nginx --restart=Never --overrides='{\"spec\":{\"containers\":[{\"name\":\"c\",\"image\":\"nginx\",\"readinessProbe\":{\"exec\":{\"command\":[\"cat\",\"/arquivo-que-nao-existe\"]},\"initialDelaySeconds\":2,\"periodSeconds\":3}}]}}'`"
+          - "Depois de ~15s confira: o web-naoready fica 0/1 (Running, mas não Ready) e com restartCount 0 — readiness não reinicia:"
+          - "`kubectl get pod web-naoready`"
+        tips:
+          - type: "tip"
+            title: "READY 0/1 x 1/1"
+            content: "A coluna READY mostra 'containers prontos / total'. 1/1 = o readinessProbe passou. 0/1 com o Pod Running = readiness ainda não passou (aquecendo ou falhando) — o Pod existe mas não recebe tráfego."
+          - type: "info"
+            title: "Por que não reinicia"
+            content: "Readiness nunca reinicia o container: a ideia é 'tira do tráfego até melhorar', não 'desliga e liga'. Quem reinicia é o liveness (Parte 2)."
+        validation:
+          - command: "kubectl get pod web-ready -o jsonpath='{.status.conditions[?(@.type==\"Ready\")].status}' 2>/dev/null || echo ''"
+            expectedOutput: "True"
+            errorMessage: "O Pod web-ready ainda não está Ready. Aguarde o readinessProbe passar (alguns segundos) e confira com 'kubectl get pod web-ready'."
+          - command: "kubectl get pod web-naoready -o jsonpath='{.status.containerStatuses[0].restartCount}' 2>/dev/null || echo ''"
+            expectedOutput: "0"
+            errorMessage: "O Pod web-naoready deveria existir com restartCount 0 (readiness não reinicia). Crie-o com o comando da tarefa."
+
+      - name: "Parte 2 — livenessProbe (reinício automático)"
+        description: "Crie um Pod cujo livenessProbe falha após alguns segundos e observe o kubelet reiniciá-lo."
+        steps:
+          - "**O que o livenessProbe faz**"
+          - "O livenessProbe detecta um container travado e manda o kubelet MATAR e REINICIAR o container. Ao contrário do readiness, ele age sobre o ciclo de vida: cada falha confirmada vira um restart."
+          - "**A armadilha do restartPolicy (o ponto central desta parte):**"
+          - "`kubectl run` cria o Pod com restartPolicy=Never por padrão — e um Pod Never NÃO reinicia o container, então o liveness ficaria inútil (restartCount nunca sobe). Para ver o liveness agir você PRECISA de restartPolicy=Always. Por isso o comando abaixo usa `--restart=Always`."
+          - "**O manifesto (apenas para LER — não precisa digitar):**"
+          - "```yaml\napiVersion: v1\nkind: Pod\nmetadata:\n  name: web-live\nspec:\n  restartPolicy: Always\n  containers:\n  - name: c\n    image: busybox\n    # cria /tmp/alive, vive 8s, apaga o arquivo e dorme:\n    command: [\"sh\", \"-c\", \"touch /tmp/alive; sleep 8; rm -f /tmp/alive; sleep 600\"]\n    livenessProbe:\n      exec:\n        command: [\"cat\", \"/tmp/alive\"]\n      initialDelaySeconds: 3\n      periodSeconds: 3\n      failureThreshold: 1\n```"
+          - "A lógica: o container cria /tmp/alive, vive 8s, apaga o arquivo e dorme. O liveness lê /tmp/alive — enquanto existe, passa; quando some, falha e o kubelet reinicia o container (que recria o arquivo, e o ciclo repete). Crie-o com o comando abaixo (note o `--restart=Always`):"
+          - "`kubectl run web-live --image=busybox --restart=Always --overrides='{\"spec\":{\"containers\":[{\"name\":\"c\",\"image\":\"busybox\",\"command\":[\"sh\",\"-c\",\"touch /tmp/alive; sleep 8; rm -f /tmp/alive; sleep 600\"],\"livenessProbe\":{\"exec\":{\"command\":[\"cat\",\"/tmp/alive\"]},\"initialDelaySeconds\":3,\"periodSeconds\":3,\"failureThreshold\":1}}]}}'`"
+          - "**Observe o reinício acontecer**"
+          - "Aguarde ~40-50s (o container precisa viver 8s, falhar o probe, ser morto e reiniciado) e veja a coluna RESTARTS subir:"
+          - "`kubectl get pod web-live`"
+          - "Confirme o contador de reinícios diretamente no status (deve ser 1 ou mais):"
+          - "`kubectl get pod web-live -o jsonpath='{.status.containerStatuses[0].restartCount}'; echo`"
+          - "Veja o evento que prova o motivo do reinício — o kubelet registra a falha do liveness e o Killing:"
+          - "`kubectl get events --field-selector involvedObject.name=web-live | grep -iE 'liveness|killing' | head -3`"
+        tips:
+          - type: "warning"
+            title: "Never não reinicia"
+            content: "Se você criar o Pod sem --restart=Always, o restartPolicy fica Never e o container NÃO reinicia quando o liveness falha (restartCount trava em 0). Foi medido: só com Always o kubelet mata e reinicia. Essa é a pegadinha mais comum deste tema."
+          - type: "tip"
+            title: "Lendo o restartCount"
+            content: "restartCount em .status.containerStatuses[0] é o número de vezes que ESTE container foi reiniciado. Com o nosso loop de 8s + probe de 3s, ele sobe de ~40 em ~40 segundos."
+        validation:
+          - command: "kubectl get pod web-live -o jsonpath='{.spec.restartPolicy}' 2>/dev/null || echo ''"
+            expectedOutput: "Always"
+            errorMessage: "O Pod web-live precisa de restartPolicy=Always para o liveness poder reiniciá-lo. Recrie-o com --restart=Always."
+          - command: "test $(kubectl get pod web-live -o jsonpath='{.status.containerStatuses[0].restartCount}' 2>/dev/null || echo 0) -ge 1 && echo ok || echo fail"
+            expectedOutput: "ok"
+            errorMessage: "O Pod web-live ainda não reiniciou (restartCount 0). Aguarde ~40-50s para o liveness falhar e o kubelet reiniciar o container."
+
+      - name: "Limpeza"
+        description: "Remova os Pods criados no lab para deixar o namespace limpo."
+        steps:
+          - "**Desprovisionamento**"
+          - "Remova os três Pods criados neste lab. O comando é idempotente (--ignore-not-found não falha se algum já tiver sido removido):"
+          - "`kubectl delete pod web-ready web-naoready web-live --ignore-not-found`"
+          - "Confirme que não sobrou nenhum dos Pods do lab:"
+          - "`kubectl get pods --no-headers 2>/dev/null | grep -E 'web-ready|web-naoready|web-live' | wc -l | tr -d ' '`"
+          - "O resultado esperado é 0 (nenhum Pod do lab de pé)."
+        validation:
+          - command: "kubectl get pods --no-headers 2>/dev/null | grep -E 'web-ready|web-naoready|web-live' | wc -l | tr -d ' '"
+            expectedOutput: "0"
+            errorMessage: "Ainda há Pods do lab de pé. Rode 'kubectl delete pod web-ready web-naoready web-live --ignore-not-found'."

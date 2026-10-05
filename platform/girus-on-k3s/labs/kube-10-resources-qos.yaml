@@ -1,0 +1,137 @@
+# ============================================================================
+# Lab GIRUS — Resource Requests, Limits e Classes de QoS  (k3s ARM64)
+# ============================================================================
+# AUTORIA: KubeForge (conteúdo próprio). Mesmo schema dos demais labs:
+#          steps=[]string, validação por igualdade exata (==), comandos
+#          imperativos (kubectl run --overrides) porque o terminal web achata
+#          YAML multi-linha colado.
+#
+# DECISÕES DE DESENHO (comprovadas em probe no cluster real):
+#   - A classe de QoS é DERIVADA pelo API server a partir de requests/limits e
+#     exposta em .status.qosClass — medido: requests==limits -> Guaranteed;
+#     requests<limits -> Burstable; sem resources -> BestEffort. A validação lê
+#     esse campo (determinístico, imediato) + os valores em .spec...resources,
+#     que a SA restrita do aluno (pods CRUD) consegue ler.
+#   - kubectl top FUNCIONA (metrics-server 1/1 no cluster), MAS leva ~30-60s para
+#     amostrar um Pod recém-criado ('metrics not available yet' nos primeiros
+#     segundos — medido). Por isso o `kubectl top` é passo de OBSERVAÇÃO, com
+#     aviso de aquecimento, e NÃO é usado em validação (seria frágil por timing).
+#
+# IMAGEM DO ALUNO: alpine/k8s:1.33.1 (bash+kubectl+helm, multi-arch ARM64).
+# ============================================================================
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: kubernetes-resources-qos-lab
+  namespace: girus
+  labels:
+    app: girus-lab-template
+data:
+  lab.yaml: |
+    name: kubernetes-resources-qos
+    title: "Lab 10 — Resources: requests, limits e classes de QoS"
+    description: "Aprenda a declarar quanto de CPU e memória um container pede (requests) e no máximo pode usar (limits), e entenda como essas duas declarações definem a classe de Qualidade de Serviço (QoS) do Pod: Guaranteed, Burstable ou BestEffort. A QoS decide a ordem de despejo (eviction) quando o nó fica sem memória — é o que separa o Pod que sobrevive do que é morto primeiro sob pressão. Você também vai observar o consumo real com kubectl top."
+    duration: 30m
+    image: "alpine/k8s:1.33.1"
+    tasks:
+      - name: "Fundamentos de requests, limits e QoS"
+        description: "Entenda o que requests e limits controlam e como eles definem a classe de QoS antes de criar o primeiro Pod."
+        steps:
+          - "**requests x limits**"
+          - "Cada container pode declarar duas coisas sobre CPU e memória:"
+          - "- requests: o que o container GARANTIDAMENTE recebe. O scheduler usa o request para decidir em qual nó o Pod cabe — ele soma os requests e só agenda onde há folga."
+          - "- limits: o TETO que o container pode usar. Estourar o limite de memória faz o container ser morto por OOMKill; estourar o de CPU faz o container ser estrangulado (throttling), não morto."
+          - "**As três classes de QoS (derivadas de requests/limits):**"
+          - "O Kubernetes classifica cada Pod automaticamente a partir do que você declarou — você não escolhe a classe diretamente, ela é consequência:"
+          - "- Guaranteed: TODOS os containers têm requests == limits para CPU e memória. É a classe mais protegida — o último a ser despejado sob pressão de memória."
+          - "- Burstable: pelo menos um container tem request definido, mas requests != limits (ou falta algum). Pode usar mais que o request quando há folga, mas é despejado antes do Guaranteed."
+          - "- BestEffort: NENHUM request/limit declarado. Usa o que sobrar, e é o PRIMEIRO a ser morto quando o nó fica sem memória."
+          - "**Por que isso importa**"
+          - "Quando um nó fica sem memória, o kubelet despeja Pods para se salvar, na ordem BestEffort -> Burstable -> Guaranteed. Declarar requests/limits não é burocracia: é o que decide quem sobrevive. Um Pod de produção crítico deve ser Guaranteed ou Burstable com requests honestos; nunca BestEffort."
+          - "Confirme que o cluster tem nós prontos:"
+          - "`kubectl get nodes`"
+        tips:
+          - type: "info"
+            title: "CPU é comprimível, memória não"
+            content: "Estourar o limite de CPU só causa throttling (o container fica mais lento). Estourar o limite de memória causa OOMKill (o container é morto). Por isso memória exige mais cuidado ao definir limits."
+          - type: "warning"
+            title: "A QoS é derivada, não escolhida"
+            content: "Você não escreve 'qosClass: Guaranteed'. A classe é calculada pelo API server a partir dos requests/limits de todos os containers. Para Guaranteed, requests e limits de CPU E memória precisam ser iguais em TODOS os containers do Pod."
+        validation:
+          - command: "test $(kubectl get nodes --no-headers 2>/dev/null | wc -l | tr -d ' ') -ge 1 && echo ok || echo fail"
+            expectedOutput: "ok"
+            errorMessage: "Não foi possível listar os nós do cluster. Rode 'kubectl get nodes'."
+
+      - name: "Parte 1 — Pod Guaranteed (requests == limits)"
+        description: "Crie um Pod com requests iguais aos limits e confirme que o API server o classifica como Guaranteed."
+        steps:
+          - "**Guaranteed: a classe mais protegida**"
+          - "Um Pod é Guaranteed quando TODOS os containers têm requests e limits definidos e IGUAIS, para CPU e memória. Vamos criar um nginx assim."
+          - "**O manifesto (apenas para LER — não precisa digitar):**"
+          - "```yaml\napiVersion: v1\nkind: Pod\nmetadata:\n  name: pod-guaranteed\nspec:\n  containers:\n  - name: c\n    image: nginx\n    resources:\n      requests:\n        cpu: \"100m\"\n        memory: \"64Mi\"\n      limits:\n        cpu: \"100m\"\n        memory: \"64Mi\"\n```"
+          - "Como o terminal web perde a indentação ao colar YAML, o comando abaixo cria esse mesmo Pod. Copie e execute:"
+          - "`kubectl run pod-guaranteed --image=nginx --restart=Never --overrides='{\"spec\":{\"containers\":[{\"name\":\"c\",\"image\":\"nginx\",\"resources\":{\"requests\":{\"cpu\":\"100m\",\"memory\":\"64Mi\"},\"limits\":{\"cpu\":\"100m\",\"memory\":\"64Mi\"}}}]}}'`"
+          - "**Confirme a classe de QoS**"
+          - "O API server calculou a classe no momento da criação. Leia o campo .status.qosClass (deve ser Guaranteed):"
+          - "`kubectl get pod pod-guaranteed -o jsonpath='{.status.qosClass}'; echo`"
+          - "Veja os requests/limits que você declarou, direto no spec:"
+          - "`kubectl get pod pod-guaranteed -o jsonpath='{.spec.containers[0].resources}'; echo`"
+        tips:
+          - type: "tip"
+            title: "Por que requests == limits"
+            content: "Igualar request e limit elimina a 'folga' que o Burstable usa — o container recebe exatamente o que pediu, nem mais nem menos. Isso dá previsibilidade e a maior proteção contra despejo."
+        validation:
+          - command: "kubectl get pod pod-guaranteed -o jsonpath='{.status.qosClass}' 2>/dev/null || echo ''"
+            expectedOutput: "Guaranteed"
+            errorMessage: "O Pod pod-guaranteed não ficou na classe Guaranteed. Garanta requests == limits para CPU e memória (use o comando da tarefa)."
+
+      - name: "Parte 2 — Burstable e BestEffort"
+        description: "Crie um Pod Burstable (requests < limits) e um BestEffort (sem resources) e compare as classes."
+        steps:
+          - "**Burstable: requests menores que os limits**"
+          - "Um Pod é Burstable quando tem request definido mas request != limit (ou algum limit a mais). Ele recebe o request garantido e pode 'estourar' (burst) até o limite quando há folga no nó."
+          - "**O manifesto Burstable (apenas para LER):**"
+          - "```yaml\napiVersion: v1\nkind: Pod\nmetadata:\n  name: pod-burstable\nspec:\n  containers:\n  - name: c\n    image: nginx\n    resources:\n      requests:\n        cpu: \"50m\"\n        memory: \"32Mi\"\n      limits:\n        cpu: \"200m\"\n        memory: \"128Mi\"\n```"
+          - "Crie-o com o comando abaixo:"
+          - "`kubectl run pod-burstable --image=nginx --restart=Never --overrides='{\"spec\":{\"containers\":[{\"name\":\"c\",\"image\":\"nginx\",\"resources\":{\"requests\":{\"cpu\":\"50m\",\"memory\":\"32Mi\"},\"limits\":{\"cpu\":\"200m\",\"memory\":\"128Mi\"}}}]}}'`"
+          - "Confirme a classe (deve ser Burstable):"
+          - "`kubectl get pod pod-burstable -o jsonpath='{.status.qosClass}'; echo`"
+          - "**BestEffort: nenhum request/limit**"
+          - "Um Pod sem NENHUM request ou limit é BestEffort — usa o que sobrar e é o primeiro a ser despejado sob pressão. Crie um nginx sem resources:"
+          - "`kubectl run pod-besteffort --image=nginx --restart=Never`"
+          - "Confirme a classe (deve ser BestEffort):"
+          - "`kubectl get pod pod-besteffort -o jsonpath='{.status.qosClass}'; echo`"
+          - "**Compare as três de uma vez**"
+          - "Veja as três classes lado a lado — é o resumo do lab:"
+          - "`kubectl get pods pod-guaranteed pod-burstable pod-besteffort -o custom-columns=NOME:.metadata.name,QOS:.status.qosClass`"
+          - "**Observe o consumo real com kubectl top**"
+          - "O metrics-server mede o uso real de CPU/memória. ATENÇÃO: pode levar ~30-60s para aparecer o primeiro dado de um Pod recém-criado — se vier 'metrics not available yet', espere um pouco e repita. Este passo é de observação (não é validado):"
+          - "`kubectl top pods`"
+        tips:
+          - type: "info"
+            title: "A ordem do despejo"
+            content: "Sob pressão de memória o kubelet despeja nesta ordem: BestEffort primeiro, depois Burstable que excedeu o request, por último Guaranteed. É por isso que cargas críticas nunca devem ser BestEffort."
+          - type: "warning"
+            title: "kubectl top precisa aquecer"
+            content: "O metrics-server existe neste cluster, mas coleta amostras em janelas de ~15s. Um Pod novo pode levar até um minuto para aparecer no 'kubectl top'. 'metrics not available yet' nos primeiros segundos é normal, não é erro."
+        validation:
+          - command: "kubectl get pod pod-burstable -o jsonpath='{.status.qosClass}' 2>/dev/null || echo ''"
+            expectedOutput: "Burstable"
+            errorMessage: "O Pod pod-burstable não ficou Burstable. Use requests MENORES que os limits (comando da tarefa)."
+          - command: "kubectl get pod pod-besteffort -o jsonpath='{.status.qosClass}' 2>/dev/null || echo ''"
+            expectedOutput: "BestEffort"
+            errorMessage: "O Pod pod-besteffort não ficou BestEffort. Crie-o SEM nenhum request/limit (comando da tarefa)."
+
+      - name: "Limpeza"
+        description: "Remova os Pods criados no lab para deixar o namespace limpo."
+        steps:
+          - "**Desprovisionamento**"
+          - "Remova os três Pods criados. O comando é idempotente (--ignore-not-found não falha se algum já tiver sido removido):"
+          - "`kubectl delete pod pod-guaranteed pod-burstable pod-besteffort --ignore-not-found`"
+          - "Confirme que não sobrou nenhum dos Pods do lab:"
+          - "`kubectl get pods --no-headers 2>/dev/null | grep -E 'pod-guaranteed|pod-burstable|pod-besteffort' | wc -l | tr -d ' '`"
+          - "O resultado esperado é 0 (nenhum Pod do lab de pé)."
+        validation:
+          - command: "kubectl get pods --no-headers 2>/dev/null | grep -E 'pod-guaranteed|pod-burstable|pod-besteffort' | wc -l | tr -d ' '"
+            expectedOutput: "0"
+            errorMessage: "Ainda há Pods do lab de pé. Rode 'kubectl delete pod pod-guaranteed pod-burstable pod-besteffort --ignore-not-found'."
