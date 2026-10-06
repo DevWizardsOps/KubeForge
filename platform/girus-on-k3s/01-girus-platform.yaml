@@ -177,6 +177,13 @@ rules:
   - apiGroups: ["metrics.k8s.io"]
     resources: ["pods", "nodes"]
     verbs: ["get", "list"]
+  # SealedSecret (bitnami.com) — o aluno cria/lê SealedSecret no PRÓPRIO namespace
+  # no lab de sealed-secrets. O controller (cluster-scoped, instalado pelo admin em
+  # kube-system) descriptografa e gera o Secret real, que a SA já lê via a regra de
+  # "secrets" acima. Sem esta regra o aluno recebe Forbidden ao aplicar o SealedSecret.
+  - apiGroups: ["bitnami.com"]
+    resources: ["sealedsecrets"]
+    verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding

@@ -28,7 +28,7 @@ metadata:
 data:
   lab.yaml: |
     name: kubernetes-statefulset
-    title: "[Opcional] Lab 13 — StatefulSet: identidade estável e storage por réplica"
+    title: "[Opcional] Lab 12 — StatefulSet: identidade estável e storage por réplica"
     description: "Um Deployment trata seus Pods como gado intercambiável: nomes aleatórios, sem ordem, sem storage próprio. Um StatefulSet trata cada Pod como um indivíduo: nome ESTÁVEL e ordinal (web-0, web-1, web-2), criação e remoção em ORDEM, e um volume PERSISTENTE próprio por réplica que sobrevive ao restart do Pod. É o padrão para bancos de dados, filas e qualquer coisa com estado (Kafka, PostgreSQL, Elasticsearch). Neste lab você cria um StatefulSet com um Service headless, confirma a identidade ordinal dos Pods, vê o PVC dedicado de cada réplica e observa o storage ser provisionado sob demanda ao escalar."
     duration: 25m
     image: "alpine/k8s:1.33.1"

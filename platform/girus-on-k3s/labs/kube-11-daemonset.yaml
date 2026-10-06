@@ -31,7 +31,7 @@ metadata:
 data:
   lab.yaml: |
     name: kubernetes-daemonset
-    title: "[Opcional] Lab 12 — DaemonSet: um Pod por nó"
+    title: "[Opcional] Lab 11 — DaemonSet: um Pod por nó"
     description: "Um DaemonSet garante que uma cópia de um Pod rode em CADA nó do cluster (ou num subconjunto de nós). É o padrão para agentes de infraestrutura: coletores de log, exportadores de métricas, agentes de rede (CNI) e de armazenamento. Neste lab você cria um DaemonSet, confirma que ele sobe exatamente um Pod por nó, entende como ele difere de um Deployment (que escala por número de réplicas, não por número de nós), e vê como taints/tolerations controlam em QUAIS nós o DaemonSet roda."
     duration: 20m
     image: "alpine/k8s:1.33.1"
